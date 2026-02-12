@@ -12,7 +12,7 @@ fun main() {
         println("0 - Выход")
         println("Ваш выбор: ")
 
-        val input = readln();
+        val input = readln()
 
         when (input) {
             "1" -> println("Учить слова")
