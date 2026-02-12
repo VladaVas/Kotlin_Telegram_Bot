@@ -1,7 +1,5 @@
 package org.example.additional
 
-import java.io.File
-
 fun main() {
     val dictionary = loadDictionary()
     println("Загружено слов: ${dictionary.size}")
@@ -14,7 +12,7 @@ fun main() {
         println("0 - Выход")
         println("Ваш выбор: ")
 
-        val input = readln();
+        val input = readln()
 
         when (input) {
             "1" -> println("Учить слова")
