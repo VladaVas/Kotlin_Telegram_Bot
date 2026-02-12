@@ -1,7 +1,5 @@
 package org.example.additional
 
-import java.io.File
-
 fun main() {
     val dictionary = loadDictionary()
     println("Загружено слов: ${dictionary.size}")
