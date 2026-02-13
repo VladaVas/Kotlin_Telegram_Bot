@@ -1,5 +1,7 @@
 package org.example.additional
-const val CORRECTANSWERS = 3
+
+const val CORRECT_ANSWERS = 3
+const val QUESTION_ANSWERS = 4
 
 fun main() {
     val dictionary = loadDictionary()
@@ -18,31 +20,66 @@ fun main() {
         when (input) {
             "1" -> {
                 println("Учить слова:")
+
                 while (true) {
-                    val notLearnedList = dictionary.filter { it.correctAnswersCount < 3 }
+
+                    val notLearnedList = dictionary.filter { it.correctAnswersCount < CORRECT_ANSWERS }
+
                     if (notLearnedList.isEmpty()) {
                         println("Все слова в словаре выучены")
                         break
+                    }
+
+                    val correctAnswer = notLearnedList.random()
+                    val remainingNotLearned = notLearnedList.filter { it != correctAnswer }
+                    val needenCount = QUESTION_ANSWERS - 1
+
+                    val additionalWords: List<Word> = if (remainingNotLearned.size >= needenCount) {
+                        remainingNotLearned.shuffled()
+                            .take(needenCount)
                     } else {
-                        val questionWords: List<Word> = notLearnedList.take(4).shuffled()
-                        val correctAnswer = questionWords.random()
-                        val options = questionWords.map { it.translation }.shuffled()
-                        println()
-                        println("${correctAnswer.word}:")
-                        options.forEachIndexed { index, transletion ->
-                            println("${index + 1} - $transletion")
-                        }
-                        println("Введите номер правильного ответа: ")
-                        val userInput = readln()
-                        println("Ваш ответ: $userInput")
+                        val learnedWords = dictionary.filter { it.correctAnswersCount >= CORRECT_ANSWERS && it != correctAnswer }
+                            .shuffled()
+                        (remainingNotLearned + learnedWords).take(needenCount)
+                    }
+
+                    val questionWords = (additionalWords + correctAnswer).shuffled()
+                    val correctAnswerId: Int = questionWords.indexOf(correctAnswer)
+
+                    println()
+                    println("${correctAnswer.word}:")
+                    questionWords.forEachIndexed { index, translation ->
+                        println("${index + 1} - ${translation.translation}")
+                    }
+                    println("-----------")
+                    println("0 - Меню")
+                    println()
+                    println("Введите номер правильного ответа: ")
+
+                    val userAnswerInput = readln()
+                    if (userAnswerInput == "0") break
+
+                    val userAnswer = userAnswerInput.toIntOrNull()
+                    if (userAnswer == null || userAnswer !in 1..QUESTION_ANSWERS) {
+                        println("Введите число от 1 до $QUESTION_ANSWERS")
+                        continue
+                    }
+
+                    if (userAnswer - 1 == correctAnswerId) {
+                        println("Правильно!")
+                        correctAnswer.correctAnswersCount++
+                        saveDictionary(dictionary)
+                    } else {
+                        println("Неправильно! ${correctAnswer.word} – это ${correctAnswer.translation}")
                     }
                 }
             }
+
             "2" -> {
                 println("Статистика:")
                 val totalCount = dictionary.size
                 println("Всего слов в словаре: $totalCount")
-                val learnedWords = dictionary.filter { it.correctAnswersCount >= CORRECTANSWERS }
+                val learnedWords = dictionary.filter { it.correctAnswersCount >= CORRECT_ANSWERS }
                 val learnedCount = learnedWords.size
                 val percent = if (totalCount > 0) {
                     (learnedCount * 100) / totalCount

@@ -5,10 +5,10 @@ import java.io.File
 data class Word(
     val word: String,
     val translation: String,
-    val correctAnswersCount: Int = 0,
+    var correctAnswersCount: Int = 0,
 )
 
-fun loadDictionary(): List<Word> {
+fun loadDictionary(): MutableList<Word> {
     val wordsFile: File = File("word.txt")
     val dictionary: MutableList<Word> = mutableListOf()
     val lines: List<String> = wordsFile.readLines()
@@ -23,4 +23,13 @@ fun loadDictionary(): List<Word> {
         dictionary.add(word)
     }
     return dictionary
+}
+
+fun saveDictionary(dictionary: List<Word>) {
+    val file = File("word.txt")
+    file.printWriter().use { out ->
+        dictionary.forEach { word ->
+            out.println("${word.word}|${word.translation}|${word.correctAnswersCount}")
+        }
+    }
 }
