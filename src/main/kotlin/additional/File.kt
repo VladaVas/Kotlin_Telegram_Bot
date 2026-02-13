@@ -32,14 +32,15 @@ fun main() {
 
                     val correctAnswer = notLearnedList.random()
                     val remainingNotLearned = notLearnedList.filter { it != correctAnswer }
+                    val needenCount = QUESTION_ANSWERS - 1
 
-                    val additionalWords: List<Word> = if (remainingNotLearned.size >= QUESTION_ANSWERS - 1) {
+                    val additionalWords: List<Word> = if (remainingNotLearned.size >= needenCount) {
                         remainingNotLearned.shuffled()
-                            .take(QUESTION_ANSWERS - 1)
+                            .take(needenCount)
                     } else {
-                        val learnedWords = dictionary.filter { it !in notLearnedList && it != correctAnswer }
+                        val learnedWords = dictionary.filter { it.correctAnswersCount >= CORRECT_ANSWERS && it != correctAnswer }
                             .shuffled()
-                        (remainingNotLearned + learnedWords).take(QUESTION_ANSWERS - 1)
+                        (remainingNotLearned + learnedWords).take(needenCount)
                     }
 
                     val questionWords = (additionalWords + correctAnswer).shuffled()

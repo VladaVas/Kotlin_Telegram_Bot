@@ -8,7 +8,7 @@ data class Word(
     var correctAnswersCount: Int = 0,
 )
 
-fun loadDictionary(): List<Word> {
+fun loadDictionary(): MutableList<Word> {
     val wordsFile: File = File("word.txt")
     val dictionary: MutableList<Word> = mutableListOf()
     val lines: List<String> = wordsFile.readLines()
@@ -26,7 +26,7 @@ fun loadDictionary(): List<Word> {
 }
 
 fun saveDictionary(dictionary: List<Word>) {
-val file= File("word.txt")
+    val file = File("word.txt")
     file.printWriter().use { out ->
         dictionary.forEach { word ->
             out.println("${word.word}|${word.translation}|${word.correctAnswersCount}")
