@@ -17,9 +17,13 @@ fun printQuestion(question: Question) {
 }
 
 fun main() {
-    val trainer = LearnWordsTrainer()
+    val trainer = try {
+        LearnWordsTrainer()
+    } catch (e: Exception) {
+        println("ERROR: ${e.message}")
+        return
+    }
     println("Загружено слов: ${trainer.dictionary.size}")
-
 
     while (true) {
         println()
