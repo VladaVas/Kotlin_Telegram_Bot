@@ -1,17 +1,14 @@
 package org.example.additional
 
-const val CORRECT_ANSWERS = 3
-const val QUESTION_ANSWERS = 4
-
 data class Word(
     val word: String,
     val translation: String,
     var correctAnswersCount: Int = 0,
 )
 
-fun printQuestion(question: Question) {
-    println("${question.correctAnswer.word}:")
-    question.questionWords.forEachIndexed { index, translation ->
+fun Question.asConsoleString() {
+    println("${this.correctAnswer.word}:")
+    this.questionWords.forEachIndexed { index, translation ->
         println("${index + 1} - ${translation.translation}")
     }
 }
@@ -46,7 +43,7 @@ fun main() {
                         println("Все слова в словаре выучены")
                         break
                     } else {
-                        printQuestion(question)
+                        question.asConsoleString()
                     }
 
                     println("-----------")

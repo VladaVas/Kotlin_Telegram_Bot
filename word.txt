@@ -5,6 +5,6 @@ red|красный|3
 rat|крыса|3
 blue|голубой|1
 pink|розовый|0
-notice|замечать|0
+notice|замечать|1
 coincidence|совпадение|0
 compatibility|совместимость|0
