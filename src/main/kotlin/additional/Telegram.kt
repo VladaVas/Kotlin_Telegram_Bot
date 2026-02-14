@@ -8,14 +8,18 @@ import java.net.http.HttpResponse
 fun main(args: Array<String>) {
 
     val botToken = args[0]
-    val urlGetUpdates = "https://api.telegram.org/bot$botToken/getUpdates"
+    val urlGetMe = "$TELEGRAM_BASE_URL.$botToken/getMe"
+    val urlGetUpdates = "$TELEGRAM_BASE_URL.$botToken/getUpdates"
 
     val builder: HttpClient.Builder = HttpClient.newBuilder()
     val client: HttpClient = builder.build()
 
-    val request: HttpRequest = HttpRequest.newBuilder().uri(URI.create(urlGetUpdates)).build()
-    val response: HttpResponse<String> = client.send(request, HttpResponse.BodyHandlers.ofString())
+    val requestGetMe: HttpRequest = HttpRequest.newBuilder().uri(URI.create(urlGetMe)).build()
+    val responseGetMe: HttpResponse<String> = client.send(requestGetMe, HttpResponse.BodyHandlers.ofString())
+    println(responseGetMe.body())
 
-    println(response.body())
+    val requestGetUpdates: HttpRequest = HttpRequest.newBuilder().uri(URI.create(urlGetUpdates)).build()
+    val responseGetUpdates: HttpResponse<String> = client.send(requestGetUpdates, HttpResponse.BodyHandlers.ofString())
+    println(responseGetUpdates.body())
 
 }
