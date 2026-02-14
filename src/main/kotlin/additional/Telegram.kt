@@ -10,6 +10,8 @@ fun main(args: Array<String>) {
     val botToken = args[0]
     var updateId = 0
 
+    println(getMe(botToken))
+
     while (true) {
         Thread.sleep(2000)
         val updates: String = getUpdates(botToken, updateId)
@@ -21,6 +23,15 @@ fun main(args: Array<String>) {
         val updateIdString = updates.substring(startUpdateId + 11, endUpdateId)
         updateId = updateIdString.toInt() + 1
     }
+}
+
+fun getMe(botToken: String): String {
+    val urlGetMe = "$TELEGRAM_BASE_URL$botToken/getMe"
+    val client: HttpClient = HttpClient.newBuilder().build()
+    val request: HttpRequest = HttpRequest.newBuilder().uri(URI.create(urlGetMe)).build()
+    val response: HttpResponse<String> = client.send(request, HttpResponse.BodyHandlers.ofString())
+
+    return response.body()
 }
 
 fun getUpdates(botToken: String, updateId: Int): String {
