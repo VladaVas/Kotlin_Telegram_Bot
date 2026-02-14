@@ -20,7 +20,6 @@ class LearnWordsTrainer {
 
     fun getStatistics(): Statistics {
         val totalCount = dictionary.size
-        println("Всего слов в словаре: $totalCount")
 
         val learnedWords = dictionary.filter { it.correctAnswersCount >= CORRECT_ANSWERS }.size
         val percent = if (totalCount > 0) {
