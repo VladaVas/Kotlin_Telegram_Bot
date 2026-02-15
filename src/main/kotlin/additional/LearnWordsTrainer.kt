@@ -2,6 +2,12 @@ package org.example.additional
 
 import java.io.File
 
+data class Word(
+    val word: String,
+    val translation: String,
+    var correctAnswersCount: Int = 0,
+)
+
 data class Statistics(
     val learnedWords: Int,
     val totalCount: Int,

@@ -10,7 +10,8 @@ fun main(args: Array<String>) {
 
     val updateIdReg: Regex = "\"update_id\":(\\d+)".toRegex()
     val messageTextReg: Regex = "\"text\":\"(.+?)\"".toRegex()
-    val chatIdReg: Regex = "\"chat_id\":\"(.+?)\"".toRegex()
+    val chatIdReg: Regex = "\"chat\":\\{\"id\":(\\d+),".toRegex()
+    val dataReg: Regex = "\"text\":\"(.+?)\"".toRegex()
 
     while (true) {
         Thread.sleep(2000)
@@ -27,10 +28,10 @@ fun main(args: Array<String>) {
 
         val textMatchResult: MatchResult? = messageTextReg.find(updates)
         val textGroups = textMatchResult?.groups
-        val text = textGroups?.get(1)?.value
+        val message = textGroups?.get(1)?.value
 
-        if (text != null) {
-            println(text)
+        if (message != null) {
+            println(message)
         } else {
             println("Нет новых сообщений")
         }
@@ -39,8 +40,16 @@ fun main(args: Array<String>) {
         val chatIdGroups = chatIdMatchResult?.groups
         val chatIdString = chatIdGroups?.get(1)?.value
 
-        if (chatIdString != null && text == "Hello") {
-            botService.sendMessage(chatIdString, "Hello" )
+        if (chatIdString != null && message?.lowercase() == HELLO_TEXT) {
+            botService.sendMessage(chatIdString, HELLO_TEXT)
+        }
+
+        val dataMatchResult: MatchResult? = dataReg.find(updates)
+        val dataGroups = dataMatchResult?.groups
+        val dataString = dataGroups?.get(1)?.value
+
+        if (chatIdString != null && message?.lowercase() == MENU_BUTTON) {
+            botService.sendMenu(dataString)
         }
     }
 }
