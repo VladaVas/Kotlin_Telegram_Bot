@@ -17,12 +17,27 @@ fun main(args: Array<String>) {
         val updates: String = getUpdates(botToken, updateId)
         println(updates)
 
-        val startUpdateId = updates.lastIndexOf("update_id")
-        val endUpdateId = updates.lastIndexOf(",\n\"message\"")
-        if (startUpdateId == -1 || endUpdateId == -1) continue
-        val updateIdString = updates.substring(startUpdateId + 11, endUpdateId)
-        updateId = updateIdString.toInt() + 1
+        val updateIdReg: Regex = "\"update_id\":(\\d+)".toRegex()
+        val updateIdMatchResult: MatchResult? = updateIdReg.find(updates)
+        val updateIdGroups = updateIdMatchResult?.groups
+        val updateIdString = updateIdGroups?.get(1)?.value
+
+        if (updateIdString != null) {
+            updateId = updateIdString.toInt() + 1
+        }
+
+        val messageTextReg: Regex = "\"text\":\"(.+?)\"".toRegex()
+        val textMatchResult: MatchResult? = messageTextReg.find(updates)
+        val textGroups = textMatchResult?.groups
+        val text = textGroups?.get(1)?.value
+
+        if (text != null) {
+            println(text)
+        } else {
+            println("Нет новых сообщений")
+        }
     }
+
 }
 
 fun getMe(botToken: String): String {
