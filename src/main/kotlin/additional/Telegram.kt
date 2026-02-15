@@ -5,13 +5,13 @@ fun main(args: Array<String>) {
     val botToken = args[0]
     var updateId = 0
     val botService = TelegramBotService(botToken)
+    val trainer = LearnWordsTrainer()
 
     println(botService.getMe())
 
     val updateIdReg: Regex = "\"update_id\":(\\d+)".toRegex()
     val messageTextReg: Regex = "\"text\":\"(.+?)\"".toRegex()
     val chatIdReg: Regex = "\"chat\":\\{\"id\":(\\d+),".toRegex()
-    val dataReg: Regex = "\"text\":\"(.+?)\"".toRegex()
 
     while (true) {
         Thread.sleep(2000)
@@ -41,15 +41,11 @@ fun main(args: Array<String>) {
         val chatIdString = chatIdGroups?.get(1)?.value
 
         if (chatIdString != null && message?.lowercase() == HELLO_TEXT) {
-            botService.sendMessage(chatIdString, HELLO_TEXT)
+            botService.sendMessage(chatIdString, "Привет! Я - Квокка, и я здесь, чтобы помочь тебе учить английские слова!")
         }
 
-        val dataMatchResult: MatchResult? = dataReg.find(updates)
-        val dataGroups = dataMatchResult?.groups
-        val dataString = dataGroups?.get(1)?.value
-
-        if (chatIdString != null && message?.lowercase() == MENU_BUTTON) {
-            botService.sendMenu(dataString)
+        if (chatIdString != null && message?.startsWith("/start") == true) {
+            botService.sendMenu(chatIdString)
         }
     }
 }
