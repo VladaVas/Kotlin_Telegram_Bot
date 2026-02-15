@@ -7,7 +7,7 @@ import java.net.http.HttpRequest
 import java.net.http.HttpResponse
 
 class TelegramBotService(private val botToken: String) {
-    val client: HttpClient = HttpClient.newBuilder().build()
+    private val client: HttpClient = HttpClient.newBuilder().build()
 
     fun getMe(): String {
         val urlGetMe = "$TELEGRAM_BASE_URL$botToken/getMe"
@@ -29,8 +29,42 @@ class TelegramBotService(private val botToken: String) {
     fun sendMessage(chatId: String, text: String): String {
         val encodedText = URLEncoder.encode(text, "utf-8")
         val urlSendMessage = "$TELEGRAM_BASE_URL$botToken/sendMessage?chat_id=$chatId&text=$encodedText"
-        val client: HttpClient = HttpClient.newBuilder().build()
         val request: HttpRequest = HttpRequest.newBuilder().uri(URI.create(urlSendMessage)).build()
+        val response: HttpResponse<String> =
+            client.send(request, HttpResponse.BodyHandlers.ofString())
+
+        return response.body()
+    }
+
+    fun sendMenu(chatId: String?): String {
+        val urlSendMessage = "$TELEGRAM_BASE_URL$botToken/sendMessage"
+        val sendMenuBody = """
+            {
+              "chat_id": "$chatId",
+              "text": "Основное меню:",
+              "reply_markup": {
+                "inline_keyboard": [
+                  [
+                    {
+                      "text": "Учить слова 📚",
+                      "callback_data": "$LEARN_WORDS_CALLBACK"
+                    }
+                  ],
+                  [
+                    {
+                      "text": "Статистика 📊",
+                      "callback_data": "$STATISTICS_CALLBACK"
+                    }
+                  ],
+                ]
+              }
+            }
+        """.trimIndent()
+        val request: HttpRequest = HttpRequest.newBuilder()
+            .uri(URI.create(urlSendMessage))
+            .header("Content-Type", "application/json")
+            .POST(HttpRequest.BodyPublishers.ofString(sendMenuBody))
+            .build()
         val response: HttpResponse<String> =
             client.send(request, HttpResponse.BodyHandlers.ofString())
 

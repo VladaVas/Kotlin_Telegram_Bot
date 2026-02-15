@@ -1,11 +1,5 @@
 package org.example.additional
 
-data class Word(
-    val word: String,
-    val translation: String,
-    var correctAnswersCount: Int = 0,
-)
-
 fun Question.asConsoleString() {
     println("${this.correctAnswer.word}:")
     this.questionWords.forEachIndexed { index, translation ->
