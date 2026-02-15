@@ -7,7 +7,7 @@ import java.net.http.HttpRequest
 import java.net.http.HttpResponse
 
 class TelegramBotService(private val botToken: String) {
-   private val client: HttpClient = HttpClient.newBuilder().build()
+    private val client: HttpClient = HttpClient.newBuilder().build()
 
     fun getMe(): String {
         val urlGetMe = "$TELEGRAM_BASE_URL$botToken/getMe"
@@ -41,7 +41,7 @@ class TelegramBotService(private val botToken: String) {
         val sendMenuBody = """
             {
               "chat_id": "$chatId",
-              "text": "Основное меню",
+              "text": "Основное меню:",
               "reply_markup": {
                 "inline_keyboard": [
                   [

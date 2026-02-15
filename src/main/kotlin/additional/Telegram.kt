@@ -42,7 +42,7 @@ fun main(args: Array<String>) {
         val chatIdGroups = chatIdMatchResult?.groups
         val chatIdString = chatIdGroups?.get(1)?.value
 
-        if (chatIdString != null && message?.lowercase() == HELLO_TEXT) {
+        if (chatIdString != null && message?.lowercase() == MENU_BUTTON) {
             botService.sendMessage(chatIdString, HELLO_TEXT)
         }
 
