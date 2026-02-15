@@ -30,7 +30,12 @@ fun main(args: Array<String>) {
         val textMatchResult: MatchResult? = messageTextReg.find(updates)
         val textGroups = textMatchResult?.groups
         val text = textGroups?.get(1)?.value
-        println(text)
+
+        if (text != null) {
+            println(text)
+        } else {
+            println("Нет новых сообщений")
+        }
     }
 
 }
