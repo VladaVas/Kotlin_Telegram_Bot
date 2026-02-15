@@ -12,7 +12,7 @@ fun main(args: Array<String>) {
     val updateIdReg: Regex = "\"update_id\":(\\d+)".toRegex()
     val messageTextReg: Regex = "\"text\":\"(.+?)\"".toRegex()
     val chatIdReg: Regex = "\"chat\":\\{\"id\":(\\d+),".toRegex()
-    val callBackQueryReg: Regex = "\"callback_query\":\\{\"data\":\"(.+?)\"".toRegex()
+    val callBackQueryReg: Regex = "\"data\":\"(.+?)\"".toRegex()
     val callbackChatIdReg: Regex = "\"callback_query\":\\{.*?\"chat\":\\{\"id\":(\\d+),".toRegex()
 
     while (true) {
@@ -36,11 +36,8 @@ fun main(args: Array<String>) {
 
         val chatIdString = chatIdReg.find(updates)?.groups?.get(1)?.value
 
-        if (chatIdString != null && message?.lowercase() == MENU_BUTTON) {
+        if (chatIdString != null && message?.startsWith(START_BUTTON) == true) {
             botService.sendMessage(chatIdString, HELLO_TEXT)
-        }
-
-        if (chatIdString != null && message?.startsWith(MENU_BUTTON) == true) {
             botService.sendMenu(chatIdString)
         }
 
@@ -53,15 +50,15 @@ fun main(args: Array<String>) {
                     botService.sendMessage(callbackChatId, TRAINING_MODE)
                 }
 
-                SHOW_STATISTICS -> {
+                STATISTICS_CALLBACK -> {
                     botService.sendMessage(callbackChatId, SHOW_STATISTICS)
                     val statistics = trainer.getStatistics()
                     val statsMessageBody = """
-                        📊Ваш прогресс:
+                        📊 Ваш прогресс:
                         
-                        📚Всего слов в словаре: ${statistics.totalCount}
                         ✅ Выучено слов: ${statistics.learnedWords}
-                        📈 Прогресс: ${statistics.percent}
+                        📚 Всего слов в словаре: ${statistics.totalCount}
+                        📈 Прогресс: ${statistics.percent}%
                     """.trimIndent()
                     botService.sendMessage(callbackChatId, statsMessageBody)
                 }
