@@ -143,11 +143,9 @@ class TelegramBotService(private val botToken: String) {
         val isCorrectAnswer = trainer.checkAnswer(userAnswerIndex)
 
         if (isCorrectAnswer) {
-            if (userAnswerIndex != null) {
             botService.sendMessage(chatId, CORRECT_ANSWER)
         } else {
             botService.sendMessage(chatId, "Неправильно! ${correctWord?.word} – это ${correctWord?.translation}")
         }
     }
     }
-}
