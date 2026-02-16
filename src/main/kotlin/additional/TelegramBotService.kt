@@ -26,7 +26,7 @@ class TelegramBotService(private val botToken: String) {
         return response.body()
     }
 
-    fun sendMessage(chatId: String, text: String): String {
+    fun sendMessage(chatId: String?, text: String): String {
         val encodedText = URLEncoder.encode(text, "utf-8")
         val urlSendMessage = "$TELEGRAM_BASE_URL$botToken/sendMessage?chat_id=$chatId&text=$encodedText"
         val request: HttpRequest = HttpRequest.newBuilder().uri(URI.create(urlSendMessage)).build()
@@ -83,25 +83,25 @@ class TelegramBotService(private val botToken: String) {
                   [
                     {
                       "text": "${question.questionWords[0].translation}",
-                      "callback_data": "$CALLBACK_DATA_ANSWER_PREFIX"
+                      "callback_data": "${CALLBACK_DATA_ANSWER_PREFIX}0"
                     }
                   ],
                   [
                     {
                      "text": "${question.questionWords[1].translation}",
-                      "callback_data": "$CALLBACK_DATA_ANSWER_PREFIX"
+                      "callback_data": "${CALLBACK_DATA_ANSWER_PREFIX}1"
                     }
                   ],
                   [
                     {
                       "text": "${question.questionWords[2].translation}",
-                      "callback_data": "$CALLBACK_DATA_ANSWER_PREFIX"
+                      "callback_data": "${CALLBACK_DATA_ANSWER_PREFIX}2"
                     }
                   ],
                   [
                     {
                      "text": "${question.questionWords[3].translation}",
-                      "callback_data": "$CALLBACK_DATA_ANSWER_PREFIX"
+                      "callback_data": "${CALLBACK_DATA_ANSWER_PREFIX}3"
                     }
                   ]
                 ]
@@ -122,14 +122,30 @@ class TelegramBotService(private val botToken: String) {
     fun checkNextQuestionAndSend(
         trainer: LearnWordsTrainer,
         telegramBotService: TelegramBotService,
-        chatId: String
+        chatId: String?
     ) {
         val nextQuestion = trainer.getNextQuestion()
         if (nextQuestion == null) {
             telegramBotService.sendMessage(chatId, ALL_WORDS_ARE_LEARNED)
         } else {
-           telegramBotService.sendQuestion(chatId, nextQuestion )
+            telegramBotService.sendQuestion(chatId, nextQuestion)
         }
+    }
 
+    fun checkAnswer(
+        chatId: String?,
+        callbackData: String?,
+        trainer: LearnWordsTrainer,
+        botService: TelegramBotService,
+        correctWord: Word?,
+    ) {
+        val userAnswerIndex = callbackData?.substringAfter(CALLBACK_DATA_ANSWER_PREFIX)?.toIntOrNull()
+        val isCorrectAnswer = trainer.checkAnswer(userAnswerIndex)
+
+        if (userAnswerIndex != null && isCorrectAnswer) {
+            botService.sendMessage(chatId, CORRECT_ANSWER)
+        } else {
+            botService.sendMessage(chatId, "Неправильно! ${correctWord?.word} – это ${correctWord?.translation}")
+        }
     }
 }
