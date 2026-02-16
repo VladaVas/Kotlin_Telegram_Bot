@@ -83,25 +83,25 @@ class TelegramBotService(private val botToken: String) {
                   [
                     {
                       "text": "${question.questionWords[0].translation}",
-                      "callback_data": "$CALLBACK_DATA_ANSWER_PREFIX"
+                      "callback_data": "${CALLBACK_DATA_ANSWER_PREFIX}0"
                     }
                   ],
                   [
                     {
                      "text": "${question.questionWords[1].translation}",
-                      "callback_data": "$CALLBACK_DATA_ANSWER_PREFIX"
+                      "callback_data": "${CALLBACK_DATA_ANSWER_PREFIX}1"
                     }
                   ],
                   [
                     {
                       "text": "${question.questionWords[2].translation}",
-                      "callback_data": "$CALLBACK_DATA_ANSWER_PREFIX"
+                      "callback_data": "${CALLBACK_DATA_ANSWER_PREFIX}2"
                     }
                   ],
                   [
                     {
                      "text": "${question.questionWords[3].translation}",
-                      "callback_data": "$CALLBACK_DATA_ANSWER_PREFIX"
+                      "callback_data": "${CALLBACK_DATA_ANSWER_PREFIX}3"
                     }
                   ]
                 ]
