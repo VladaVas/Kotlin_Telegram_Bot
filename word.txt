@@ -3,8 +3,8 @@ dog|собака|3
 cat|кошка|3
 red|красный|3
 rat|крыса|3
-blue|голубой|2
-pink|розовый|0
-notice|замечать|2
-coincidence|совпадение|2
-compatibility|совместимость|2
+blue|голубой|3
+pink|розовый|3
+notice|замечать|3
+coincidence|совпадение|3
+compatibility|совместимость|3

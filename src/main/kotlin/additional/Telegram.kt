@@ -82,6 +82,10 @@ fun main(args: Array<String>) {
                     botService.sendMenu(chatIdString)
                 }
 
+                MENU_BUTTON -> {
+                    botService.sendMenu(callbackChatId)
+                }
+
                 EXIT_BUTTON -> {
                     botService.sendMessage(callbackChatId, EXIT_TEXT)
                 }

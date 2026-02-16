@@ -62,7 +62,7 @@ class TelegramBotService(private val botToken: String) {
                   ],
                   [
                 {
-                  "text": "Выход ❌",
+                  "text": "Сделать паузу ☕️",
                   "callback_data": "$EXIT_BUTTON"
                 }
               ]
@@ -93,15 +93,25 @@ class TelegramBotService(private val botToken: String) {
                     }
                 ]  
             """.trimIndent()
-        }.joinToString(",")
+        }.toMutableList()
 
+        keyboardButton.add(
+        """
+            [
+                    {
+                        "text": "⬅ Назад в меню",
+                        "callback_data": "$MENU_BUTTON"
+                    }
+                ]  
+        """.trimIndent()
+        )
         val questionBody = """
              {
               "chat_id": "$chatId",
               "text": "$questionText",
               "reply_markup": {
                 "inline_keyboard": [
-                  $keyboardButton
+                  ${keyboardButton.joinToString(",")}
                 ]
               }
             }
