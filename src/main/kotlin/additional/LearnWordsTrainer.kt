@@ -21,7 +21,7 @@ data class Question(
 
 class LearnWordsTrainer {
 
-    private var question: Question? = null
+    var question: Question? = null
     val dictionary = loadDictionary()
 
     fun getStatistics(): Statistics {

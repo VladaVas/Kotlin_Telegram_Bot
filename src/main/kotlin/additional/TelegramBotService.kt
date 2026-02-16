@@ -122,7 +122,7 @@ class TelegramBotService(private val botToken: String) {
     fun checkNextQuestionAndSend(
         trainer: LearnWordsTrainer,
         telegramBotService: TelegramBotService,
-        chatId: String
+        chatId: String?
     ) {
         val nextQuestion = trainer.getNextQuestion()
         if (nextQuestion == null) {
@@ -134,18 +134,20 @@ class TelegramBotService(private val botToken: String) {
 
     fun checkAnswer(
         chatId: String?,
-        callbackData: String,
+        callbackData: String?,
         trainer: LearnWordsTrainer,
         botService: TelegramBotService,
         correctWord: Word?,
     ) {
-        val userAnswerIndex = callbackData.substringAfter(CALLBACK_DATA_ANSWER_PREFIX).toIntOrNull()
+        val userAnswerIndex = callbackData?.substringAfter(CALLBACK_DATA_ANSWER_PREFIX)?.toIntOrNull()
         val isCorrectAnswer = trainer.checkAnswer(userAnswerIndex)
 
         if (isCorrectAnswer) {
-            botService.sendMessage(callbackData, CORRECT_ANSWER)
+            if (userAnswerIndex != null) {
+            botService.sendMessage(chatId, CORRECT_ANSWER)
         } else {
-            botService.sendMessage(callbackData, "Неправильно! ${correctWord?.word} – это ${correctWord?.translation}")
+            botService.sendMessage(chatId, "Неправильно! ${correctWord?.word} – это ${correctWord?.translation}")
         }
+    }
     }
 }
