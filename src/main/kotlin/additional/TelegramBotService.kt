@@ -55,7 +55,13 @@ class TelegramBotService(private val botToken: String) {
                       "text": "Статистика 📊",
                       "callback_data": "$STATISTICS_CALLBACK"
                     }
-                  ]
+                  ],
+                  [
+                {
+                  "text": "Выход ❌",
+                  "callback_data": "${'$'}EXIT_BUTTON"
+                }
+              ]
                 ]
               }
             }
@@ -73,41 +79,36 @@ class TelegramBotService(private val botToken: String) {
 
     fun sendQuestion(chatId: String?, question: Question): String {
         val urlSendMessage = "$TELEGRAM_BASE_URL$botToken/sendMessage"
-        val questionText = "\uD83C\uDDEC\uD83C\uDDE7 ${question.correctAnswer.word}\n\nВыберите правильный ответ:"
+        val questionText = "\uD83C\uDDEC\uD83C\uDDE7 ${question.correctAnswer.word}\n\nВыбери правильный ответ:"
+        val keyboardButton = question.questionWords.mapIndexed { index, word ->
+            """
+                [
+                    {
+                        "text": "${word.translation}",
+                        "callback_data": "${CALLBACK_DATA_ANSWER_PREFIX}$index"
+                    }
+                ],
+                [
+                    {
+                        "text": "⬅ Меню",
+                        "callback_data": "$MENU_BUTTON"
+                    }
+                ]  
+            """.trimIndent()
+        }.joinToString(",")
+
         val questionBody = """
              {
               "chat_id": "$chatId",
               "text": "$questionText",
               "reply_markup": {
                 "inline_keyboard": [
-                  [
-                    {
-                      "text": "${question.questionWords[0].translation}",
-                      "callback_data": "${CALLBACK_DATA_ANSWER_PREFIX}0"
-                    }
-                  ],
-                  [
-                    {
-                     "text": "${question.questionWords[1].translation}",
-                      "callback_data": "${CALLBACK_DATA_ANSWER_PREFIX}1"
-                    }
-                  ],
-                  [
-                    {
-                      "text": "${question.questionWords[2].translation}",
-                      "callback_data": "${CALLBACK_DATA_ANSWER_PREFIX}2"
-                    }
-                  ],
-                  [
-                    {
-                     "text": "${question.questionWords[3].translation}",
-                      "callback_data": "${CALLBACK_DATA_ANSWER_PREFIX}3"
-                    }
-                  ]
+                  $keyboardButton
                 ]
               }
             }
         """.trimIndent()
+
         val request: HttpRequest = HttpRequest.newBuilder()
             .uri(URI.create(urlSendMessage))
             .header("Content-Type", "application/json")

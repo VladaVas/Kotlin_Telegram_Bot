@@ -6,12 +6,13 @@ fun main(args: Array<String>) {
     var updateId = 0
     val botService = TelegramBotService(botToken)
     val trainer = LearnWordsTrainer()
+    val trainers = mutableMapOf<Long, LearnWordsTrainer>()
 
     println(botService.getMe())
 
     val updateIdReg: Regex = "\"update_id\":(\\d+)".toRegex()
     val messageTextReg: Regex = "\"text\":\"(.+?)\"".toRegex()
-    val chatIdReg: Regex = "\"chat\":\\{\"id\":(\\d+),".toRegex()
+    val chatIdReg: Regex = "\"chat\":\\{\"id\":(-*\\d+),".toRegex()
     val callBackQueryReg: Regex = "\"data\":\"(.+?)\"".toRegex()
     val callbackChatIdReg: Regex = "\"callback_query\":\\{.*?\"chat\":\\{\"id\":(\\d+),".toRegex()
 
@@ -37,6 +38,8 @@ fun main(args: Array<String>) {
         val chatIdString = chatIdReg.find(updates)?.groups?.get(1)?.value
 
         if (chatIdString != null && message?.startsWith(START_BUTTON) == true) {
+            val chatId = chatIdString.toLong()
+            trainers.getOrPut(chatId) { LearnWordsTrainer() }
             botService.sendMessage(chatIdString, HELLO_TEXT)
             botService.sendMenu(chatIdString)
         }
@@ -65,6 +68,10 @@ fun main(args: Array<String>) {
                         📈 Прогресс: ${statistics.percent}%
                     """.trimIndent()
                     botService.sendMessage(callbackChatId, statsMessageBody)
+                }
+
+                EXIT_BUTTON -> {
+                    botService.sendMessage(callbackChatId, EXIT_TEXT)
                 }
             }
         }
