@@ -45,10 +45,16 @@ fun main(args: Array<String>) {
         }
 
         val callBackQueryData = callBackQueryReg.find(updates)?.groups?.get(1)?.value
-        val callbackChatId =callbackChatIdReg.find(updates)?.groups?.get(1)?.value
+        val callbackChatId = callbackChatIdReg.find(updates)?.groups?.get(1)?.value
 
         if (callbackChatId != null && callBackQueryData?.startsWith(CALLBACK_DATA_ANSWER_PREFIX) == true) {
-            botService.checkAnswer(callbackChatId, callBackQueryData, trainer, botService, trainer.question?.correctAnswer)
+            botService.checkAnswer(
+                callbackChatId,
+                callBackQueryData,
+                trainer,
+                botService,
+                trainer.question?.correctAnswer
+            )
             botService.checkNextQuestionAndSend(trainer, botService, callbackChatId)
         }
 
@@ -68,6 +74,12 @@ fun main(args: Array<String>) {
                         📈 Прогресс: ${statistics.percent}%
                     """.trimIndent()
                     botService.sendMessage(callbackChatId, statsMessageBody)
+                }
+
+                RESET_PROGRESS_CALLBACK -> {
+                    trainer.resertProgress()
+                    botService.sendMessage(callbackChatId, RESET_PROGRESS_TEXT)
+                    botService.sendMenu(chatIdString)
                 }
 
                 EXIT_BUTTON -> {

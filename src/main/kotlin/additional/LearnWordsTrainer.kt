@@ -73,6 +73,10 @@ class LearnWordsTrainer {
         }
     }
 
+    fun resertProgress() {
+        dictionary.forEach { it.correctAnswersCount = 0 }
+    }
+
     private fun loadDictionary(): MutableList<Word> {
         try {
             val wordsFile = File("word.txt")

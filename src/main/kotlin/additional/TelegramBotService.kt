@@ -56,8 +56,8 @@ class TelegramBotService(private val botToken: String) {
                       "callback_data": "$STATISTICS_CALLBACK"
                     },
                      {
-                      "text": "Сбросить прогресс обучения 📊",
-                      "callback_data": "$STATISTICS_CALLBACK"
+                      "text": "Сбросить прогресc 🧩",
+                      "callback_data": "$RESET_PROGRESS_CALLBACK"
                     }
                   ],
                   [
@@ -90,12 +90,6 @@ class TelegramBotService(private val botToken: String) {
                     {
                         "text": "${word.translation}",
                         "callback_data": "${CALLBACK_DATA_ANSWER_PREFIX}$index"
-                    }
-                ],
-                [
-                    {
-                        "text": "⬅ Меню",
-                        "callback_data": "$MENU_BUTTON"
                     }
                 ]  
             """.trimIndent()
