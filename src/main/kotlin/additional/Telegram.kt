@@ -6,6 +6,7 @@ fun main(args: Array<String>) {
     var updateId = 0
     val botService = TelegramBotService(botToken)
     val trainer = LearnWordsTrainer()
+    val lastQuestion: Question? = null
 
     println(botService.getMe())
 
@@ -43,6 +44,11 @@ fun main(args: Array<String>) {
 
         val callBackQueryData = callBackQueryReg.find(updates)?.groups?.get(1)?.value
         val callbackChatId =callbackChatIdReg.find(updates)?.groups?.get(1)?.value
+
+        if (callBackQueryData != null && callBackQueryData.startsWith(CALLBACK_DATA_ANSWER_PREFIX) == true) {
+            botService.checkAnswer(callbackChatId, callBackQueryData, trainer, botService, lastQuestion?.correctAnswer)
+            botService.checkNextQuestionAndSend(trainer, botService, callBackQueryData)
+        }
 
         if (callbackChatId != null) {
             when (callBackQueryData) {
