@@ -54,12 +54,16 @@ class TelegramBotService(private val botToken: String) {
                     {
                       "text": "Статистика 📊",
                       "callback_data": "$STATISTICS_CALLBACK"
+                    },
+                     {
+                      "text": "Сбросить прогресс обучения 📊",
+                      "callback_data": "$STATISTICS_CALLBACK"
                     }
                   ],
                   [
                 {
                   "text": "Выход ❌",
-                  "callback_data": "${'$'}EXIT_BUTTON"
+                  "callback_data": "$EXIT_BUTTON"
                 }
               ]
                 ]
