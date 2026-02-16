@@ -70,4 +70,39 @@ class TelegramBotService(private val botToken: String) {
 
         return response.body()
     }
+
+    fun sendQuestion(chatId: String?, question: Question): String {
+        val urlSendMessage = "$TELEGRAM_BASE_URL$botToken/sendQuestion"
+        val questionText = "*${question.correctAnswer.word}*"
+        val questionBody = """
+             {
+              "chat_id": "$chatId",
+              "text": "$questionText",
+              "reply_markup":
+              }
+        """.trimIndent()
+        val request: HttpRequest = HttpRequest.newBuilder()
+            .uri(URI.create(urlSendMessage))
+            .header("Content-Type", "application/json")
+            .POST(HttpRequest.BodyPublishers.ofString(questionBody))
+            .build()
+        val response: HttpResponse<String> =
+            client.send(request, HttpResponse.BodyHandlers.ofString())
+
+        return response.body()
+    }
+
+    fun checkNextQuestionAndSend(
+        trainer: LearnWordsTrainer,
+        telegramBotService: TelegramBotService,
+        chatId: String
+    ) {
+        val nextQuestion = trainer.getNextQuestion()
+        if (nextQuestion == null) {
+            telegramBotService.sendMessage(chatId, ALL_WORDS_ARE_LEARNED)
+        } else {
+           telegramBotService.sendQuestion(chatId, nextQuestion )
+        }
+
+    }
 }

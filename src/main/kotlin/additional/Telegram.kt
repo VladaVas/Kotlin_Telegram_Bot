@@ -48,6 +48,7 @@ fun main(args: Array<String>) {
             when (callBackQueryData) {
                 LEARN_WORDS_CALLBACK -> {
                     botService.sendMessage(callbackChatId, TRAINING_MODE)
+                    botService.checkNextQuestionAndSend(trainer, botService, callbackChatId)
                 }
 
                 STATISTICS_CALLBACK -> {
