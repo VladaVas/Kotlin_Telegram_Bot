@@ -44,7 +44,7 @@ fun main(args: Array<String>) {
         val callBackQueryData = callBackQueryReg.find(updates)?.groups?.get(1)?.value
         val callbackChatId =callbackChatIdReg.find(updates)?.groups?.get(1)?.value
 
-        if (callbackChatId != null && callbackChatId.startsWith(CALLBACK_DATA_ANSWER_PREFIX) == true) {
+        if (callbackChatId != null && callBackQueryData?.startsWith(CALLBACK_DATA_ANSWER_PREFIX) == true) {
             botService.checkAnswer(callbackChatId, callBackQueryData, trainer, botService, trainer.question?.correctAnswer)
             botService.checkNextQuestionAndSend(trainer, botService, callbackChatId)
         }
