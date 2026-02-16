@@ -7,7 +7,5 @@ const val HELLO_TEXT = "Привет! \uD83D\uDC4B \nЯ - Квокка, и я з
 const val START_BUTTON = "/start"
 const val LEARN_WORDS_CALLBACK = "learn_word_click"
 const val STATISTICS_CALLBACK = "statistics_click"
-const val TRAINING_MODE = "Вы выбрали режим обучения \uD83D\uDCDA"
-const val SHOW_STATISTICS = "Вы выбрали показ статистики \uD83D\uDCCA"
 const val CALLBACK_DATA_ANSWER_PREFIX = "answer_"
 const val ALL_WORDS_ARE_LEARNED = "Все слова в словаре выучены"

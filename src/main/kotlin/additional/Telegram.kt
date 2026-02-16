@@ -47,12 +47,10 @@ fun main(args: Array<String>) {
         if (callbackChatId != null) {
             when (callBackQueryData) {
                 LEARN_WORDS_CALLBACK -> {
-                    botService.sendMessage(callbackChatId, TRAINING_MODE)
                     botService.checkNextQuestionAndSend(trainer, botService, callbackChatId)
                 }
 
                 STATISTICS_CALLBACK -> {
-                    botService.sendMessage(callbackChatId, SHOW_STATISTICS)
                     val statistics = trainer.getStatistics()
                     val statsMessageBody = """
                         📊 Ваш прогресс:
