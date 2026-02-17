@@ -73,7 +73,7 @@ class LearnWordsTrainer {
         }
     }
 
-    fun resertProgress() {
+    fun resetProgress() {
         dictionary.forEach { it.correctAnswersCount = 0 }
     }
 
