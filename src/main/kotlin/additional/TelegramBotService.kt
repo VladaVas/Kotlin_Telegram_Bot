@@ -1,5 +1,6 @@
 package org.example.additional
 
+import kotlinx.serialization.json.Json
 import java.net.URI
 import java.net.URLEncoder
 import java.net.http.HttpClient
@@ -17,7 +18,7 @@ class TelegramBotService(private val botToken: String) {
         return response.body()
     }
 
-    fun getUpdates(updateId: Int): String {
+    fun getUpdates(updateId: Long): String {
         val urlGetUpdates = "$TELEGRAM_BASE_URL$botToken/getUpdates?offset=$updateId"
         val request: HttpRequest = HttpRequest.newBuilder().uri(URI.create(urlGetUpdates)).build()
         val response: HttpResponse<String> =
@@ -26,7 +27,7 @@ class TelegramBotService(private val botToken: String) {
         return response.body()
     }
 
-    fun sendMessage(chatId: String?, text: String): String {
+    fun sendMessage(chatId: Long, text: String): String {
         val encodedText = URLEncoder.encode(text, "utf-8")
         val urlSendMessage = "$TELEGRAM_BASE_URL$botToken/sendMessage?chat_id=$chatId&text=$encodedText"
         val request: HttpRequest = HttpRequest.newBuilder().uri(URI.create(urlSendMessage)).build()
@@ -36,34 +37,29 @@ class TelegramBotService(private val botToken: String) {
         return response.body()
     }
 
-    fun sendMenu(chatId: String?): String {
+    fun sendMenu(chatId: Long?): String {
         val urlSendMessage = "$TELEGRAM_BASE_URL$botToken/sendMessage"
-        val sendMenuBody = """
-            {
-              "chat_id": "$chatId",
-              "text": "Основное меню:",
-              "reply_markup": {
-                "inline_keyboard": [
-                  [
-                    {
-                      "text": "Учить слова 📚",
-                      "callback_data": "$LEARN_WORDS_CALLBACK"
-                    }
-                  ],
-                  [
-                    {
-                      "text": "Статистика 📊",
-                      "callback_data": "$STATISTICS_CALLBACK"
-                    }
-                  ]
-                ]
-              }
-            }
-        """.trimIndent()
+
+        val requestBody = SendMessageRequest(
+            chatId = chatId,
+            text = "Основное меню:",
+            replyMarkup = ReplyMarkup(
+                listOf(
+                    listOf(InlineKeyboard(text = "Учить слова \uD83D\uDCDA", callbackData = LEARN_WORDS_CALLBACK)),
+                    listOf(
+                        InlineKeyboard(text = "Статистика \uD83D\uDCCA", callbackData = STATISTICS_CALLBACK),
+                        InlineKeyboard(text = "Сбросить прогресc \uD83E\uDDE9", callbackData = RESET_PROGRESS_CALLBACK)
+                    ),
+                    listOf(InlineKeyboard(text = "Сделать паузу ☕\uFE0F", callbackData = EXIT_BUTTON))
+                )
+            )
+        )
+
+        val requestBodyString = Json.encodeToString(requestBody)
         val request: HttpRequest = HttpRequest.newBuilder()
             .uri(URI.create(urlSendMessage))
             .header("Content-Type", "application/json")
-            .POST(HttpRequest.BodyPublishers.ofString(sendMenuBody))
+            .POST(HttpRequest.BodyPublishers.ofString(requestBodyString))
             .build()
         val response: HttpResponse<String> =
             client.send(request, HttpResponse.BodyHandlers.ofString())
@@ -71,47 +67,33 @@ class TelegramBotService(private val botToken: String) {
         return response.body()
     }
 
-    fun sendQuestion(chatId: String?, question: Question): String {
+    fun sendQuestion(chatId: Long, question: Question): String {
         val urlSendMessage = "$TELEGRAM_BASE_URL$botToken/sendMessage"
-        val questionText = "\uD83C\uDDEC\uD83C\uDDE7 ${question.correctAnswer.word}\n\nВыберите правильный ответ:"
-        val questionBody = """
-             {
-              "chat_id": "$chatId",
-              "text": "$questionText",
-              "reply_markup": {
-                "inline_keyboard": [
-                  [
-                    {
-                      "text": "${question.questionWords[0].translation}",
-                      "callback_data": "${CALLBACK_DATA_ANSWER_PREFIX}0"
-                    }
-                  ],
-                  [
-                    {
-                     "text": "${question.questionWords[1].translation}",
-                      "callback_data": "${CALLBACK_DATA_ANSWER_PREFIX}1"
-                    }
-                  ],
-                  [
-                    {
-                      "text": "${question.questionWords[2].translation}",
-                      "callback_data": "${CALLBACK_DATA_ANSWER_PREFIX}2"
-                    }
-                  ],
-                  [
-                    {
-                     "text": "${question.questionWords[3].translation}",
-                      "callback_data": "${CALLBACK_DATA_ANSWER_PREFIX}3"
-                    }
-                  ]
-                ]
-              }
-            }
-        """.trimIndent()
+        val questionText = "\uD83C\uDDEC\uD83C\uDDE7 ${question.correctAnswer.word}\n\nВыбери правильный ответ"
+        val requestBody = SendMessageRequest(
+            chatId = chatId,
+            text = "$questionText:",
+            replyMarkup = ReplyMarkup(
+                question.questionWords.mapIndexed { index, word ->
+                    listOf(
+                        InlineKeyboard(
+                            text = word.translation,
+                            callbackData = "$CALLBACK_DATA_ANSWER_PREFIX$index"
+                        )
+                    )
+                } + listOf(
+                    listOf(
+                        InlineKeyboard(MENU_BUTTON, MENU_BUTTON_TEXT)
+                    )
+                )
+            ))
+
+        val requestBodyString = Json.encodeToString(requestBody)
+
         val request: HttpRequest = HttpRequest.newBuilder()
             .uri(URI.create(urlSendMessage))
             .header("Content-Type", "application/json")
-            .POST(HttpRequest.BodyPublishers.ofString(questionBody))
+            .POST(HttpRequest.BodyPublishers.ofString(requestBodyString))
             .build()
         val response: HttpResponse<String> =
             client.send(request, HttpResponse.BodyHandlers.ofString())
@@ -120,11 +102,11 @@ class TelegramBotService(private val botToken: String) {
     }
 
     fun checkNextQuestionAndSend(
-        trainer: LearnWordsTrainer,
+        trainer: LearnWordsTrainer?,
         telegramBotService: TelegramBotService,
-        chatId: String?
+        chatId: Long
     ) {
-        val nextQuestion = trainer.getNextQuestion()
+        val nextQuestion = trainer?.getNextQuestion()
         if (nextQuestion == null) {
             telegramBotService.sendMessage(chatId, ALL_WORDS_ARE_LEARNED)
         } else {
@@ -133,16 +115,16 @@ class TelegramBotService(private val botToken: String) {
     }
 
     fun checkAnswer(
-        chatId: String?,
+        chatId: Long,
         callbackData: String?,
-        trainer: LearnWordsTrainer,
+        trainer: LearnWordsTrainer?,
         botService: TelegramBotService,
         correctWord: Word?,
     ) {
         val userAnswerIndex = callbackData?.substringAfter(CALLBACK_DATA_ANSWER_PREFIX)?.toIntOrNull()
-        val isCorrectAnswer = trainer.checkAnswer(userAnswerIndex)
+        val isCorrectAnswer = trainer?.checkAnswer(userAnswerIndex)
 
-        if (userAnswerIndex != null && isCorrectAnswer) {
+        if (userAnswerIndex != null && isCorrectAnswer == true) {
             botService.sendMessage(chatId, CORRECT_ANSWER)
         } else {
             botService.sendMessage(chatId, "Неправильно! ${correctWord?.word} – это ${correctWord?.translation}")
