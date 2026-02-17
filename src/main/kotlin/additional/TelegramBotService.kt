@@ -5,6 +5,7 @@ import java.net.URI
 import java.net.URLEncoder
 import java.net.http.HttpClient
 import java.net.http.HttpRequest
+import java.net.http.HttpRequest.newBuilder
 import java.net.http.HttpResponse
 
 class TelegramBotService(private val botToken: String) {
@@ -12,7 +13,7 @@ class TelegramBotService(private val botToken: String) {
 
     fun getMe(): String {
         val urlGetMe = "$TELEGRAM_BASE_URL$botToken/getMe"
-        val request: HttpRequest = HttpRequest.newBuilder().uri(URI.create(urlGetMe)).build()
+        val request: HttpRequest = newBuilder().uri(URI.create(urlGetMe)).build()
         val response: HttpResponse<String> = client.send(request, HttpResponse.BodyHandlers.ofString())
 
         return response.body()
@@ -20,7 +21,7 @@ class TelegramBotService(private val botToken: String) {
 
     fun getUpdates(updateId: Long): String {
         val urlGetUpdates = "$TELEGRAM_BASE_URL$botToken/getUpdates?offset=$updateId"
-        val request: HttpRequest = HttpRequest.newBuilder().uri(URI.create(urlGetUpdates)).build()
+        val request: HttpRequest = newBuilder().uri(URI.create(urlGetUpdates)).build()
         val response: HttpResponse<String> =
             client.send(request, HttpResponse.BodyHandlers.ofString())
 
@@ -30,7 +31,7 @@ class TelegramBotService(private val botToken: String) {
     fun sendMessage(chatId: Long, text: String): String {
         val encodedText = URLEncoder.encode(text, "utf-8")
         val urlSendMessage = "$TELEGRAM_BASE_URL$botToken/sendMessage?chat_id=$chatId&text=$encodedText"
-        val request: HttpRequest = HttpRequest.newBuilder().uri(URI.create(urlSendMessage)).build()
+        val request: HttpRequest = newBuilder().uri(URI.create(urlSendMessage)).build()
         val response: HttpResponse<String> =
             client.send(request, HttpResponse.BodyHandlers.ofString())
 
@@ -59,7 +60,7 @@ class TelegramBotService(private val botToken: String) {
         )
 
         val requestBodyString = Json.encodeToString(requestBody)
-        val request: HttpRequest = HttpRequest.newBuilder()
+        val request: HttpRequest = newBuilder()
             .uri(URI.create(urlSendMessage))
             .header("Content-Type", "application/json")
             .POST(HttpRequest.BodyPublishers.ofString(requestBodyString))
@@ -89,11 +90,12 @@ class TelegramBotService(private val botToken: String) {
                         InlineKeyboard(MENU_BUTTON, MENU_BUTTON_TEXT)
                     )
                 )
-            ))
+            )
+        )
 
         val requestBodyString = Json.encodeToString(requestBody)
 
-        val request: HttpRequest = HttpRequest.newBuilder()
+        val request: HttpRequest = newBuilder()
             .uri(URI.create(urlSendMessage))
             .header("Content-Type", "application/json")
             .POST(HttpRequest.BodyPublishers.ofString(requestBodyString))
