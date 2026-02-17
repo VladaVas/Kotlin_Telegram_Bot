@@ -69,7 +69,7 @@ class TelegramBotService(private val botToken: String) {
 
     fun sendQuestion(chatId: Long, question: Question): String {
         val urlSendMessage = "$TELEGRAM_BASE_URL$botToken/sendMessage"
-        val questionText = "\uD83C\uDDEC\uD83C\uDDE7 ${question.correctAnswer.word}\n\nВыбери правильный ответ:"
+        val questionText = "\uD83C\uDDEC\uD83C\uDDE7 ${question.correctAnswer.word}\n\nВыбери правильный ответ"
         val requestBody = SendMessageRequest(
             chatId = chatId,
             text = "$questionText:",
