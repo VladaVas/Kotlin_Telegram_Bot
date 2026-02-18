@@ -94,16 +94,12 @@ fun main(args: Array<String>) {
             val message = update.message?.text
             val chatIdString = update.message?.chat?.id ?: update.callbackQuery?.message?.chat?.id
 
-            if (message != null) {
-                println(message)
-            } else {
-                println("Нет новых сообщений")
+            if (message != null) println(message)
 
-                if (chatIdString != null && message?.startsWith(START_BUTTON) == true) {
-                    trainers.getOrPut(chatIdString) { LearnWordsTrainer(chatIdString) }
-                    botService.sendMessage(chatIdString, HELLO_TEXT)
-                    botService.sendMenu(chatIdString)
-                }
+            if (chatIdString != null && message?.startsWith(START_BUTTON) == true) {
+                trainers.getOrPut(chatIdString) { LearnWordsTrainer(chatIdString) }
+                botService.sendMessage(chatIdString, HELLO_TEXT)
+                botService.sendMenu(chatIdString)
 
                 val callBackQueryData = update.callbackQuery?.data
                 val callbackChatId = update.callbackQuery?.message?.chat?.id
@@ -120,7 +116,6 @@ fun main(args: Array<String>) {
                     botService.checkNextQuestionAndSend(trainer, botService, callbackChatId)
 
                     if (callbackChatId != null) {
-                        val trainer = trainers.getOrPut(callbackChatId) { LearnWordsTrainer(callbackChatId) }
                         when (callBackQueryData) {
                             LEARN_WORDS_CALLBACK -> {
                                 botService.checkNextQuestionAndSend(trainer, botService, callbackChatId)
@@ -153,7 +148,6 @@ fun main(args: Array<String>) {
                             }
                         }
                     }
-
                 }
             }
         }

@@ -82,7 +82,12 @@ class LearnWordsTrainer(chatId: Long? = null) {
     private fun loadDictionary(): MutableList<Word> {
         try {
             val wordsFile = File(dictionaryFileName)
-            if (!wordsFile.exists()) return mutableListOf()
+
+            if (!wordsFile.exists()) {
+                val copyFile = File("word.txt")
+                copyFile.copyTo(wordsFile)
+            }
+
             val dictionary: MutableList<Word> = mutableListOf()
             val lines: List<String> = wordsFile.readLines()
 
@@ -102,7 +107,7 @@ class LearnWordsTrainer(chatId: Long? = null) {
     }
 
     private fun saveDictionary(dictionary: List<Word>) {
-        val file = File("word.txt")
+        val file = File(dictionaryFileName)
         file.printWriter().use { out ->
             dictionary.forEach { word ->
                 out.println("${word.word}|${word.translation}|${word.correctAnswersCount}")
