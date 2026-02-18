@@ -46,12 +46,9 @@ class TelegramBotService(private val botToken: String) {
             replyMarkup = ReplyMarkup(
                 listOf(
                     listOf(InlineKeyboard(text = "Учить слова \uD83D\uDCDA", callbackData = LEARN_WORDS_CALLBACK)),
-                    listOf(InlineKeyboard(text = "Статистика \uD83D\uDCCA", callbackData = STATISTICS_CALLBACK)),
                     listOf(
-                        InlineKeyboard(
-                            text = "Сбросить прогресc \uD83E\uDDE9",
-                            callbackData = RESET_PROGRESS_CALLBACK
-                        )
+                        InlineKeyboard(text = "Статистика \uD83D\uDCCA", callbackData = STATISTICS_CALLBACK),
+                        InlineKeyboard(text = "Сбросить прогресc \uD83E\uDDE9", callbackData = RESET_PROGRESS_CALLBACK)
                     ),
                     listOf(InlineKeyboard(text = "Сделать паузу ☕\uFE0F", callbackData = EXIT_BUTTON))
                 )
@@ -131,79 +128,6 @@ class TelegramBotService(private val botToken: String) {
             botService.sendMessage(chatId, CORRECT_ANSWER)
         } else {
             botService.sendMessage(chatId, "Неправильно! ${correctWord?.word} – это ${correctWord?.translation}")
-        }
-    }
-
-    fun handleUpdate(
-        update: Update,
-        botService: TelegramBotService,
-        trainers: MutableMap<Long, LearnWordsTrainer>,
-    ) {
-        val message = update.message?.text
-        if (message != null) {
-            println(message)
-        } else {
-            println("Нет новых сообщений")
-        }
-
-        val chatIdString = update.message?.chat?.id ?: update.callbackQuery?.message?.chat?.id ?: return
-        trainers.getOrPut(chatIdString) { LearnWordsTrainer() }
-        val callBackQueryData = update.callbackQuery?.data
-        val callbackChatId = update.callbackQuery?.message?.chat?.id
-
-        if (message?.startsWith(START_BUTTON) == true) {
-            trainers.getOrPut(chatIdString) { LearnWordsTrainer() }
-            botService.sendMessage(chatIdString, HELLO_TEXT)
-            botService.sendMenu(chatIdString)
-        }
-
-        if (callbackChatId != null && callBackQueryData?.startsWith(CALLBACK_DATA_ANSWER_PREFIX) == true) {
-            val trainer = trainers.getOrPut(callbackChatId) { LearnWordsTrainer() }
-            botService.checkAnswer(
-                callbackChatId,
-                callBackQueryData,
-                trainer,
-                botService,
-                trainer.question?.correctAnswer
-            )
-            botService.checkNextQuestionAndSend(trainer, botService, callbackChatId)
-            return
-        }
-
-        if (callbackChatId != null) {
-            val trainer = trainers.getOrPut(callbackChatId) { LearnWordsTrainer() }
-            when (callBackQueryData) {
-
-                LEARN_WORDS_CALLBACK -> {
-                    botService.checkNextQuestionAndSend(trainer, botService, callbackChatId)
-                }
-
-                STATISTICS_CALLBACK -> {
-                    val statistics = trainer.getStatistics()
-                    val statsMessageBody = """
-                        📊 Ваш прогресс:
-                        
-                        ✅ Выучено слов: ${statistics.learnedWords}
-                        📚 Всего слов в словаре: ${statistics.totalCount}
-                        📈 Прогресс: ${statistics.percent}%
-                    """.trimIndent()
-                    botService.sendMessage(callbackChatId, statsMessageBody)
-                }
-
-                RESET_PROGRESS_CALLBACK -> {
-                    trainer.resetProgress()
-                    botService.sendMessage(callbackChatId, RESET_PROGRESS_TEXT)
-                    botService.sendMenu(chatIdString)
-                }
-
-                MENU_BUTTON -> {
-                    botService.sendMenu(callbackChatId)
-                }
-
-                EXIT_BUTTON -> {
-                    botService.sendMessage(callbackChatId, EXIT_TEXT)
-                }
-            }
         }
     }
 }
