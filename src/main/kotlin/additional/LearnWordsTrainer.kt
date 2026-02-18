@@ -19,8 +19,9 @@ data class Question(
     val correctAnswer: Word,
 )
 
-class LearnWordsTrainer {
+class LearnWordsTrainer(chatId: Long? = null) {
 
+    private val dictionaryFileName = "word_$chatId.txt"
     var question: Question? = null
     val dictionary = loadDictionary()
 
@@ -75,11 +76,12 @@ class LearnWordsTrainer {
 
     fun resetProgress() {
         dictionary.forEach { it.correctAnswersCount = 0 }
+        saveDictionary(dictionary)
     }
 
     private fun loadDictionary(): MutableList<Word> {
         try {
-            val wordsFile = File("word.txt")
+            val wordsFile = File(dictionaryFileName)
             if (!wordsFile.exists()) return mutableListOf()
             val dictionary: MutableList<Word> = mutableListOf()
             val lines: List<String> = wordsFile.readLines()
@@ -94,7 +96,7 @@ class LearnWordsTrainer {
                 dictionary.add(word)
             }
             return dictionary
-        } catch (e: IndexOutOfBoundsException) {
+        } catch (_: IndexOutOfBoundsException) {
             throw IllegalStateException("Некорректный файл.\nНевозможно загрузить словарь.")
         }
     }
