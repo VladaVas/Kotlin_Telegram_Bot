@@ -71,7 +71,7 @@ fun main(args: Array<String>) {
     val botToken = args[0]
     var lastUpdateId = 0L
     val botService = TelegramBotService(botToken)
-    val trainers = mutableMapOf<Long, LearnWordsTrainer>()
+    val trainers = HashMap<Long, LearnWordsTrainer>()
 
     val json = Json {
         ignoreUnknownKeys = true
@@ -100,53 +100,53 @@ fun main(args: Array<String>) {
                 trainers.getOrPut(chatIdString) { LearnWordsTrainer(chatIdString) }
                 botService.sendMessage(chatIdString, HELLO_TEXT)
                 botService.sendMenu(chatIdString)
+            }
+            val callBackQueryData = update.callbackQuery?.data
+            val callbackChatId = update.callbackQuery?.message?.chat?.id
 
-                val callBackQueryData = update.callbackQuery?.data
-                val callbackChatId = update.callbackQuery?.message?.chat?.id
+            if (callbackChatId != null && callBackQueryData?.startsWith(CALLBACK_DATA_ANSWER_PREFIX) == true) {
+                val trainer = trainers.getOrPut(callbackChatId) { LearnWordsTrainer(callbackChatId) }
+                botService.checkAnswer(
+                    callbackChatId,
+                    callBackQueryData,
+                    trainer,
+                    botService,
+                    trainer.question?.correctAnswer
+                )
+                botService.checkNextQuestionAndSend(trainer, botService, callbackChatId)
+            }
 
-                if (callbackChatId != null && callBackQueryData?.startsWith(CALLBACK_DATA_ANSWER_PREFIX) == true) {
-                    val trainer = trainers.getOrPut(callbackChatId) { LearnWordsTrainer(callbackChatId) }
-                    botService.checkAnswer(
-                        callbackChatId,
-                        callBackQueryData,
-                        trainer,
-                        botService,
-                        trainer.question?.correctAnswer
-                    )
-                    botService.checkNextQuestionAndSend(trainer, botService, callbackChatId)
+            if (callbackChatId != null) {
+                val trainer = trainers.getOrPut(callbackChatId) { LearnWordsTrainer(callbackChatId) }
+                when (callBackQueryData) {
+                    LEARN_WORDS_CALLBACK -> {
+                        botService.checkNextQuestionAndSend(trainer, botService, callbackChatId)
+                    }
 
-                    if (callbackChatId != null) {
-                        when (callBackQueryData) {
-                            LEARN_WORDS_CALLBACK -> {
-                                botService.checkNextQuestionAndSend(trainer, botService, callbackChatId)
-                            }
-
-                            STATISTICS_CALLBACK -> {
-                                val statistics = trainer.getStatistics()
-                                val statsMessageBody = """
+                    STATISTICS_CALLBACK -> {
+                        val statistics = trainer.getStatistics()
+                        val statsMessageBody = """
                         📊 Ваш прогресс:
                         
                         ✅ Выучено слов: ${statistics.learnedWords}
                         📚 Всего слов в словаре: ${statistics.totalCount}
                         📈 Прогресс: ${statistics.percent}%
                     """.trimIndent()
-                                botService.sendMessage(callbackChatId, statsMessageBody)
-                            }
+                        botService.sendMessage(callbackChatId, statsMessageBody)
+                    }
 
-                            RESET_PROGRESS_CALLBACK -> {
-                                trainer.resetProgress()
-                                botService.sendMessage(callbackChatId, RESET_PROGRESS_TEXT)
-                                botService.sendMenu(callbackChatId)
-                            }
+                    RESET_PROGRESS_CALLBACK -> {
+                        trainer.resetProgress()
+                        botService.sendMessage(callbackChatId, RESET_PROGRESS_TEXT)
+                        botService.sendMenu(callbackChatId)
+                    }
 
-                            MENU_BUTTON -> {
-                                botService.sendMenu(callbackChatId)
-                            }
+                    MENU_BUTTON -> {
+                        botService.sendMenu(callbackChatId)
+                    }
 
-                            EXIT_BUTTON -> {
-                                botService.sendMessage(callbackChatId, EXIT_TEXT)
-                            }
-                        }
+                    EXIT_BUTTON -> {
+                        botService.sendMessage(callbackChatId, EXIT_TEXT)
                     }
                 }
             }
