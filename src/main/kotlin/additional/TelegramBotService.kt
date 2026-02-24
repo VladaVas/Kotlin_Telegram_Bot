@@ -38,7 +38,7 @@ class TelegramBotService(private val botToken: String) {
     }
 
     fun sendMenu(chatId: Long?): String {
-        val urlSendMessage = "$TELEGRAM_BASE_URL$botToken/sendMessage"
+        val urlSendMessage = "$TELEGRAM_BASE_URL$botToken/editMessageReplyMarkup"
 
         val requestBody = SendMessageRequest(
             chatId = chatId,
