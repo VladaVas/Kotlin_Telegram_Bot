@@ -23,7 +23,7 @@ jobs:
         run: ./gradlew shadowJar
 
       - name: Rename file
-        run: mv build/libs/EnglishWordsBot-1.0-SNAPSHOT-all.jar bot.jar
+        run: mv build/libs/KotlinTelegramBot-1.0-SNAPSHOT-all.jar bot.jar
 
       - name: Deploy jar to VPS
         uses: appleboy/scp-action@master
