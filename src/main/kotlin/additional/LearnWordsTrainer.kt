@@ -19,9 +19,15 @@ data class Question(
     val correctAnswer: Word,
 )
 
-class LearnWordsTrainer(chatId: Long? = null) {
+class LearnWordsTrainer private constructor(
+    private val dictionaryFileName: String,
+) {
+    constructor(chatId: Long? = null) : this("word_$chatId.txt")
 
-    private val dictionaryFileName = "word_$chatId.txt"
+    companion object {
+        fun fromDictionaryFile(filePath: String) = LearnWordsTrainer(filePath)
+    }
+
     var question: Question? = null
     val dictionary = loadDictionary()
 
@@ -77,6 +83,26 @@ class LearnWordsTrainer(chatId: Long? = null) {
     fun resetProgress() {
         dictionary.forEach { it.correctAnswersCount = 0 }
         saveDictionary(dictionary)
+    }
+
+    fun addWordsFromFile(filePath: String): Int {
+        val file = File(filePath)
+        if (!file.exists()) return 0
+        var added = 0
+        file.forEachLine { line ->
+            val parts = line.split("|")
+            if (parts.size >= 2) {
+                val word = Word(
+                    word = parts[0].trim(),
+                    translation = parts[1].trim(),
+                    correctAnswersCount = parts.getOrNull(2)?.toIntOrNull() ?: 0
+                )
+                dictionary.add(word)
+                added++
+            }
+        }
+        saveDictionary(dictionary)
+        return added
     }
 
     private fun loadDictionary(): MutableList<Word> {
