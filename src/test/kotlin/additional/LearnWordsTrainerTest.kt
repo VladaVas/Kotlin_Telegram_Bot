@@ -46,12 +46,14 @@ class LearnWordsTrainerTest {
     @DisplayName("loadDictionary: некорректный файл приводит к IllegalStateException")
     fun `test statistics with corrupted file`() {
         val corruptedFile = File.createTempFile("corrupted_dictionary", ".txt").apply {
-            writeText("")
+            writeText("only_one_part_without_separator")
             deleteOnExit()
         }
+        assertTrue(corruptedFile.exists())
+        assertTrue(corruptedFile.readText().isNotEmpty())
 
         val exception = assertThrows(IllegalStateException::class.java) {
-            LearnWordsTrainer.fromDictionaryFile(corruptedFile.absolutePath).getStatistics()
+            LearnWordsTrainer.fromDictionaryFile(corruptedFile.absolutePath)
         }
 
         assertTrue(exception.message!!.contains("Некорректный файл"))
