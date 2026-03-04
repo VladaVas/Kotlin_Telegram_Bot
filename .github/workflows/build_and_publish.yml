@@ -40,7 +40,7 @@ jobs:
           host: ${{ secrets.HOST }}
           username: ${{ secrets.SSH_USER }}
           password: ${{ secrets.SSH_PASSWORD }}
-          source: words.txt
+          source: words
           target: /root
 
       - name: Restart Remote Service
