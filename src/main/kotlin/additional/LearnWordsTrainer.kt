@@ -85,6 +85,25 @@ class LearnWordsTrainer private constructor(
         saveDictionary(dictionary)
     }
 
+    fun addWordsFromFile(filePath: String) {
+        val file = File(filePath)
+        if (!file.exists()) return
+        val lines = file.readLines()
+        for (line in lines) {
+            val parts = line.split("|")
+            if (parts.size < 2) continue
+            val word = Word(
+                word = parts[0].trim(),
+                translation = parts[1].trim(),
+                correctAnswersCount = parts.getOrNull(2)?.toIntOrNull() ?: 0
+            )
+            if (word.word.isNotBlank() && word.translation.isNotBlank()) {
+                dictionary.add(word)
+            }
+        }
+        saveDictionary(dictionary)
+    }
+
     private fun loadDictionary(): MutableList<Word> {
         try {
             val wordsFile = File(dictionaryFileName)

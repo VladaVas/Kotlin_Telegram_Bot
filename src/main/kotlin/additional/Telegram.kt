@@ -21,11 +21,53 @@ data class Response(
 )
 
 @Serializable
+data class Document(
+    @SerialName("file_name")
+    val fileName: String,
+    @SerialName("mime_type")
+    val mimeType: String,
+    @SerialName("file_id")
+    val fileId: String,
+    @SerialName("file_unique_id")
+    val fileUniqueId: String,
+    @SerialName("file_size")
+    val fileSize: Long,
+)
+
+@Serializable
 data class Message(
     @SerialName("text")
-    val text: String,
+    val text: String? = null,
     @SerialName("chat")
     val chat: Chat,
+    @SerialName("document")
+    val document: Document? = null,
+)
+
+@Serializable
+data class GetFileRequest(
+    @SerialName("file_id")
+    val fileId: String,
+)
+
+@Serializable
+data class GetFileResponse(
+    @SerialName("ok")
+    val ok: Boolean,
+    @SerialName("result")
+    val result: TelegramFile? = null,
+)
+
+@Serializable
+data class TelegramFile(
+    @SerialName("file_id")
+    val fileId: String,
+    @SerialName("file_unique_id")
+    val fileUniqueId: String,
+    @SerialName("file_size")
+    val fileSize: Long,
+    @SerialName("file_path")
+    val filePath: String,
 )
 
 @Serializable
@@ -95,6 +137,20 @@ fun main(args: Array<String>) {
             val chatIdString = update.message?.chat?.id ?: update.callbackQuery?.message?.chat?.id
 
             if (message != null) println(message)
+
+            val document = update.message?.document
+            if (chatIdString != null && document != null) {
+                val trainer = trainers.getOrPut(chatIdString) { LearnWordsTrainer(chatIdString) }
+                val jsonResponse = botService.getFile(document.fileId, json)
+                println(jsonResponse)
+                val getFileResponse: GetFileResponse = json.decodeFromString(jsonResponse)
+                getFileResponse.result?.let { telegramFile ->
+                    val localFileName = "word_upload_$chatIdString.txt"
+                    botService.downloadFile(telegramFile.filePath, localFileName)
+                    trainer.addWordsFromFile(localFileName)
+                    botService.sendMessage(chatIdString, "Словарь обновлён: добавлены слова из файла ${document.fileName}.")
+                }
+            }
 
             if (chatIdString != null && message?.startsWith(START_BUTTON) == true) {
                 trainers.getOrPut(chatIdString) { LearnWordsTrainer(chatIdString) }
