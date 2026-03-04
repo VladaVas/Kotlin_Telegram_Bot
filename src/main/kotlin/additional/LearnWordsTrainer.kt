@@ -19,9 +19,15 @@ data class Question(
     val correctAnswer: Word,
 )
 
-class LearnWordsTrainer(chatId: Long? = null) {
+class LearnWordsTrainer private constructor(
+    private val dictionaryFileName: String,
+) {
+    constructor(chatId: Long? = null) : this("word_$chatId.txt")
 
-    private val dictionaryFileName = "word_$chatId.txt"
+    companion object {
+        fun fromDictionaryFile(filePath: String) = LearnWordsTrainer(filePath)
+    }
+
     var question: Question? = null
     val dictionary = loadDictionary()
 

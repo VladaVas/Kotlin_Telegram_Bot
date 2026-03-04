@@ -2,9 +2,11 @@ package org.example.additional
 
 fun Question.asConsoleString() {
     println("${this.correctAnswer.word}:")
-    this.questionWords.forEachIndexed { index, translation ->
-        println("${index + 1} - ${translation.translation}")
-    }
+    this.questionWords
+        .take(10)
+        .forEachIndexed { index, translation ->
+            println("${index + 1} - ${translation.translation}")
+        }
 }
 
 fun main() {
