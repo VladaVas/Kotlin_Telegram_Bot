@@ -60,8 +60,11 @@ class TelegramBotService(private val botToken: String) {
             .send(request, HttpResponse.BodyHandlers.ofInputStream())
 
         println("status code: " + response.statusCode())
-        val body: InputStream = response.body()
-        body.copyTo(File(fileName).outputStream(), 16 * 1024)
+        response.body().use { input ->
+            File(fileName).outputStream().use { output ->
+                input.copyTo(output, 16 * 1024)
+            }
+        }
     }
 
     fun sendMessage(chatId: Long, text: String): String {
