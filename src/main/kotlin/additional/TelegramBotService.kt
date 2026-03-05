@@ -1,6 +1,8 @@
 package org.example.additional
 
 import kotlinx.serialization.json.Json
+import java.io.File
+import java.io.InputStream
 import java.net.URI
 import java.net.URLEncoder
 import java.net.http.HttpClient
@@ -25,6 +27,44 @@ class TelegramBotService(private val botToken: String) {
             client.send(request, HttpResponse.BodyHandlers.ofString())
 
         return response.body()
+    }
+
+    fun getFile(fileId: String, json: Json): String {
+        val urlGetFile = "$TELEGRAM_BASE_URL$botToken/getFile"
+        val requestBody = GetFileRequest(fileId = fileId)
+        val requestBodyString = json.encodeToString(requestBody)
+        val client: HttpClient = HttpClient.newBuilder().build()
+        val request: HttpRequest = HttpRequest.newBuilder()
+            .uri(URI.create(urlGetFile))
+            .header("Content-type", "application/json")
+            .POST(HttpRequest.BodyPublishers.ofString(requestBodyString))
+            .build()
+        val response: HttpResponse<String> = client.send(
+            request,
+            HttpResponse.BodyHandlers.ofString()
+        )
+        return response.body()
+    }
+
+    fun downloadFile(filePath: String, fileName: String) {
+        val urlGetFile = "$BOT_FILE_URL$botToken/$filePath"
+        println(urlGetFile)
+        val request = HttpRequest
+            .newBuilder()
+            .uri(URI.create(urlGetFile))
+            .GET()
+            .build()
+
+        val response: HttpResponse<InputStream> = HttpClient
+            .newHttpClient()
+            .send(request, HttpResponse.BodyHandlers.ofInputStream())
+
+        println("status code: " + response.statusCode())
+        response.body().use { input ->
+            File(fileName).outputStream().use { output ->
+                input.copyTo(output, 16 * 1024)
+            }
+        }
     }
 
     fun sendMessage(chatId: Long, text: String): String {
