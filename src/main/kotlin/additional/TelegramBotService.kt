@@ -3,11 +3,15 @@ package org.example.additional
 import kotlinx.serialization.json.Json
 import java.io.File
 import java.io.InputStream
+import java.math.BigInteger
 import java.net.URI
 import java.net.URLEncoder
 import java.net.http.HttpClient
 import java.net.http.HttpRequest
 import java.net.http.HttpResponse
+import java.nio.charset.StandardCharsets
+import java.nio.file.Files
+import java.util.Random
 
 class TelegramBotService(private val botToken: String) {
     private val client: HttpClient = HttpClient.newBuilder().build()
@@ -77,6 +81,98 @@ class TelegramBotService(private val botToken: String) {
         return response.body()
     }
 
+    fun sendPhoto(file: File, chatId: Long, hasSpoiler: Boolean = false): String {
+        val data: MutableMap<String, Any> = LinkedHashMap()
+        data["chat_id"] = chatId.toString()
+        data["photo"] = file
+        data["has_spoiler"] = hasSpoiler
+        val boundary: String = BigInteger(35, Random()).toString(36)
+
+        val request = HttpRequest.newBuilder()
+            .uri(URI.create("$TELEGRAM_BASE_URL$botToken/sendPhoto"))
+            .postMultipartFormData(boundary, data)
+            .build()
+        val response = client.send(request, HttpResponse.BodyHandlers.ofString())
+        return response.body()
+    }
+
+    fun sendPhotoByFileId(fileId: String, chatId: Long, hasSpoiler: Boolean = false): String {
+        val body = "chat_id=$chatId&photo=${URLEncoder.encode(fileId, "UTF-8")}&has_spoiler=$hasSpoiler"
+        val request = HttpRequest.newBuilder()
+            .uri(URI.create("$TELEGRAM_BASE_URL$botToken/sendPhoto"))
+            .header("Content-Type", "application/x-www-form-urlencoded")
+            .POST(HttpRequest.BodyPublishers.ofString(body))
+            .build()
+        val response = client.send(request, HttpResponse.BodyHandlers.ofString())
+        return response.body()
+    }
+
+    fun sendPhotoForWord(
+        chatId: Long,
+        word: Word,
+        imageDir: File,
+        json: Json,
+        hasSpoiler: Boolean = true,
+        onFileIdSaved: () -> Unit = {}
+    ) {
+        val imageFile = findImageFile(word, imageDir) ?: return
+        val cachedFileId = word.fileId
+
+        if (cachedFileId != null) {
+            sendPhotoByFileId(cachedFileId, chatId, hasSpoiler)
+            return
+        }
+        val responseBody = sendPhoto(imageFile, chatId, hasSpoiler)
+        val sendPhotoResponse = json.decodeFromString<SendPhotoResponse>(responseBody)
+        val fileId = sendPhotoResponse.result?.photo?.maxByOrNull { it.fileSize }?.fileId
+        if (fileId != null) {
+            word.fileId = fileId
+            onFileIdSaved()
+        }
+    }
+
+    private fun findImageFile(word: Word, imageDir: File): File? {
+        if (!imageDir.isDirectory) return null
+        word.imagePath?.let { path ->
+            val file = File(imageDir, path)
+            if (file.exists() && file.isFile) return file
+        }
+        for (ext in IMAGE_EXTENSIONS) {
+            val file = File(imageDir, "${word.word}.$ext")
+            if (file.exists() && file.isFile) return file
+        }
+        return null
+    }
+
+    private fun HttpRequest.Builder.postMultipartFormData(boundary: String, data: Map<String, Any>): HttpRequest.Builder {
+        val byteArrays = ArrayList<ByteArray>()
+        val separator = "--$boundary\r\nContent-Disposition: form-data; name=".toByteArray(StandardCharsets.UTF_8)
+
+        for (entry in data.entries) {
+            byteArrays.add(separator)
+            when (entry.value) {
+                is File -> {
+                    val file = entry.value as File
+                    val path = file.toPath()
+                    val mimeType = Files.probeContentType(path) ?: "image/jpeg"
+                    byteArrays.add(
+                        "\"${entry.key}\"; filename=\"${path.fileName}\"\r\nContent-Type: $mimeType\r\n\r\n".toByteArray(
+                            StandardCharsets.UTF_8
+                        )
+                    )
+                    byteArrays.add(Files.readAllBytes(path))
+                    byteArrays.add("\r\n".toByteArray(StandardCharsets.UTF_8))
+                }
+                else -> byteArrays.add("\"${entry.key}\"\r\n\r\n${entry.value}\r\n".toByteArray(StandardCharsets.UTF_8))
+            }
+        }
+        byteArrays.add("--$boundary--".toByteArray(StandardCharsets.UTF_8))
+
+        header("Content-Type", "multipart/form-data; boundary=$boundary")
+            .POST(HttpRequest.BodyPublishers.ofByteArrays(byteArrays))
+        return this
+    }
+
     fun sendMenu(chatId: Long?): String {
         val urlSendMessage = "$TELEGRAM_BASE_URL$botToken/sendMessage"
 
@@ -142,12 +238,22 @@ class TelegramBotService(private val botToken: String) {
     fun checkNextQuestionAndSend(
         trainer: LearnWordsTrainer?,
         telegramBotService: TelegramBotService,
-        chatId: Long
+        chatId: Long,
+        imageDir: File,
+        json: Json
     ) {
         val nextQuestion = trainer?.getNextQuestion()
         if (nextQuestion == null) {
             telegramBotService.sendMessage(chatId, ALL_WORDS_ARE_LEARNED)
         } else {
+            telegramBotService.sendPhotoForWord(
+                chatId = chatId,
+                word = nextQuestion.correctAnswer,
+                imageDir = imageDir,
+                json = json,
+                hasSpoiler = true,
+                onFileIdSaved = { trainer?.save() }
+            )
             telegramBotService.sendQuestion(chatId, nextQuestion)
         }
     }

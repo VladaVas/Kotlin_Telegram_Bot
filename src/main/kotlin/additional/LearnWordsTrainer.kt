@@ -6,6 +6,8 @@ data class Word(
     val word: String,
     val translation: String,
     var correctAnswersCount: Int = 0,
+    var imagePath: String? = null,
+    var fileId: String? = null,
 )
 
 data class Statistics(
@@ -85,6 +87,10 @@ class LearnWordsTrainer private constructor(
         saveDictionary(dictionary)
     }
 
+    fun save() {
+        saveDictionary(dictionary)
+    }
+
     fun addWordsFromFile(filePath: String) {
         val file = File(filePath)
         if (!file.exists()) return
@@ -95,7 +101,9 @@ class LearnWordsTrainer private constructor(
             val word = Word(
                 word = parts[0].trim(),
                 translation = parts[1].trim(),
-                correctAnswersCount = parts.getOrNull(2)?.toIntOrNull() ?: 0
+                correctAnswersCount = parts.getOrNull(2)?.toIntOrNull() ?: 0,
+                imagePath = parts.getOrNull(3)?.trim()?.takeIf { it.isNotBlank() },
+                fileId = parts.getOrNull(4)?.trim()?.takeIf { it.isNotBlank() }
             )
             if (word.word.isNotBlank() && word.translation.isNotBlank()) {
                 dictionary.add(word)
@@ -118,12 +126,17 @@ class LearnWordsTrainer private constructor(
 
             for (line in lines) {
                 val parts = line.split("|")
+                if (parts.size < 2) continue
                 val word = Word(
-                    word = parts[0],
-                    translation = parts[1],
-                    correctAnswersCount = parts.getOrNull(2)?.toIntOrNull() ?: 0
+                    word = parts[0].trim(),
+                    translation = parts[1].trim(),
+                    correctAnswersCount = parts.getOrNull(2)?.toIntOrNull() ?: 0,
+                    imagePath = parts.getOrNull(3)?.trim()?.takeIf { it.isNotBlank() },
+                    fileId = parts.getOrNull(4)?.trim()?.takeIf { it.isNotBlank() }
                 )
-                dictionary.add(word)
+                if (word.word.isNotBlank() && word.translation.isNotBlank()) {
+                    dictionary.add(word)
+                }
             }
             return dictionary
         } catch (_: IndexOutOfBoundsException) {
@@ -135,7 +148,9 @@ class LearnWordsTrainer private constructor(
         val file = File(dictionaryFileName)
         file.printWriter().use { out ->
             dictionary.forEach { word ->
-                out.println("${word.word}|${word.translation}|${word.correctAnswersCount}")
+                out.println(
+                    "${word.word}|${word.translation}|${word.correctAnswersCount}|${word.imagePath ?: ""}|${word.fileId ?: ""}"
+                )
             }
         }
     }

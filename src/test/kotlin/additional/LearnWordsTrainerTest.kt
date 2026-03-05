@@ -17,7 +17,7 @@ class LearnWordsTrainerTest {
     @Test
     @DisplayName("getStatistics: 4 выученных из 7 слов")
     fun `test statistics with 4 words of 7`() {
-        val trainer = LearnWordsTrainer.fromDictionaryFile(testFilePath("4_words_of_7.txt"))
+        val trainer = LearnWordsTrainer.fromDictionaryFile(testFilePath("additional/4_words_of_7.txt"))
 
         val statistics = trainer.getStatistics()
 
@@ -86,7 +86,7 @@ class LearnWordsTrainerTest {
     @Test
     @DisplayName("getNextQuestion: null, когда все слова выучены")
     fun `test getNextQuestion() with all words learned`() {
-        val source = File(testFilePath("4_words_of_7.txt"))
+        val source = File(testFilePath("additional/4_words_of_7.txt"))
         val file = File.createTempFile("all_learned_dictionary", ".txt").apply {
             val allLearnedLines = source.readLines().map { line ->
                 val parts = line.split("|")
@@ -105,7 +105,7 @@ class LearnWordsTrainerTest {
     @Test
     @DisplayName("checkAnswer: true, когда индекс ответа совпадает с индексом правильного слова")
     fun `test checkAnswer() with true`() {
-        val source = File(testFilePath("4_words_of_7.txt"))
+        val source = File(testFilePath("additional/4_words_of_7.txt"))
         val file = File.createTempFile("check_answer_true", ".txt").apply {
             writeText(source.readText())
             deleteOnExit()
@@ -124,7 +124,7 @@ class LearnWordsTrainerTest {
     @Test
     @DisplayName("checkAnswer: false, когда индекс ответа неверный или null")
     fun `test checkAnswer() with false`() {
-        val source = File(testFilePath("4_words_of_7.txt"))
+        val source = File(testFilePath("additional/4_words_of_7.txt"))
         val file = File.createTempFile("check_answer_false", ".txt").apply {
             writeText(source.readText())
             deleteOnExit()
@@ -144,7 +144,7 @@ class LearnWordsTrainerTest {
     @Test
     @DisplayName("resetProgress: обнуляет счётчики выученных слов и сохраняет в файл")
     fun `test resetProgress() with 2 words in dictionary`() {
-        val source = File(testFilePath("4_words_of_7.txt"))
+        val source = File(testFilePath("additional/4_words_of_7.txt"))
         val file = File.createTempFile("reset_progress", ".txt").apply {
             writeText(source.readText())
             deleteOnExit()
