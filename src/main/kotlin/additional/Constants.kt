@@ -19,3 +19,4 @@ const val RESET_PROGRESS_CALLBACK = "reset_progress"
 const val RESET_PROGRESS_TEXT = "Прогресс изучения слов сброшен ✅"
 const val IMAGES_FOLDER = "images"
 val IMAGE_EXTENSIONS = listOf("jpg", "jpeg", "png", "gif", "webp")
+const val DICTIONARY_SEPARATOR = "|"

@@ -1,6 +1,7 @@
 package org.example.additional
 
 import java.io.File
+import java.nio.charset.StandardCharsets
 
 data class Word(
     val word: String,
@@ -94,9 +95,9 @@ class LearnWordsTrainer private constructor(
     fun addWordsFromFile(filePath: String) {
         val file = File(filePath)
         if (!file.exists()) return
-        val lines = file.readLines()
+        val lines = file.readLines(StandardCharsets.UTF_8)
         for (line in lines) {
-            val parts = line.split("|")
+            val parts = line.split(DICTIONARY_SEPARATOR)
             if (parts.size < 2) continue
             val word = Word(
                 word = parts[0].trim(),
@@ -122,10 +123,10 @@ class LearnWordsTrainer private constructor(
             }
 
             val dictionary: MutableList<Word> = mutableListOf()
-            val lines: List<String> = wordsFile.readLines()
+            val lines: List<String> = wordsFile.readLines(StandardCharsets.UTF_8)
 
             for (line in lines) {
-                val parts = line.split("|")
+                val parts = line.split(DICTIONARY_SEPARATOR)
                 if (parts.size < 2) continue
                 val word = Word(
                     word = parts[0].trim(),
@@ -146,10 +147,16 @@ class LearnWordsTrainer private constructor(
 
     private fun saveDictionary(dictionary: List<Word>) {
         val file = File(dictionaryFileName)
-        file.printWriter().use { out ->
+        file.printWriter(StandardCharsets.UTF_8).use { out ->
             dictionary.forEach { word ->
                 out.println(
-                    "${word.word}|${word.translation}|${word.correctAnswersCount}|${word.imagePath ?: ""}|${word.fileId ?: ""}"
+                    listOf(
+                        word.word,
+                        word.translation,
+                        word.correctAnswersCount.toString(),
+                        word.imagePath ?: "",
+                        word.fileId ?: ""
+                    ).joinToString(DICTIONARY_SEPARATOR)
                 )
             }
         }
