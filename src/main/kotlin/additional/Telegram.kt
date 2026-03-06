@@ -3,6 +3,7 @@ package org.example.additional
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
+import java.io.File
 
 @Serializable
 data class Update(
@@ -108,12 +109,37 @@ data class InlineKeyboard(
     val text: String,
 )
 
+@Serializable
+data class PhotoSize(
+    @SerialName("file_id")
+    val fileId: String,
+    @SerialName("file_size")
+    val fileSize: Long = 0,
+)
+
+@Serializable
+data class SendPhotoResult(
+    @SerialName("message_id")
+    val messageId: Long,
+    @SerialName("photo")
+    val photo: List<PhotoSize>? = null,
+)
+
+@Serializable
+data class SendPhotoResponse(
+    @SerialName("ok")
+    val ok: Boolean,
+    @SerialName("result")
+    val result: SendPhotoResult? = null,
+)
+
 fun main(args: Array<String>) {
 
     val botToken = args[0]
     var lastUpdateId = 0L
     val botService = TelegramBotService(botToken)
     val trainers = HashMap<Long, LearnWordsTrainer>()
+    val imageDir = File(IMAGES_FOLDER)
 
     val json = Json {
         ignoreUnknownKeys = true
@@ -169,14 +195,14 @@ fun main(args: Array<String>) {
                     botService,
                     trainer.question?.correctAnswer
                 )
-                botService.checkNextQuestionAndSend(trainer, botService, callbackChatId)
+                botService.checkNextQuestionAndSend(trainer, botService, callbackChatId, imageDir, json)
             }
 
             if (callbackChatId != null) {
                 val trainer = trainers.getOrPut(callbackChatId) { LearnWordsTrainer(callbackChatId) }
                 when (callBackQueryData) {
                     LEARN_WORDS_CALLBACK -> {
-                        botService.checkNextQuestionAndSend(trainer, botService, callbackChatId)
+                        botService.checkNextQuestionAndSend(trainer, botService, callbackChatId, imageDir, json)
                     }
 
                     STATISTICS_CALLBACK -> {

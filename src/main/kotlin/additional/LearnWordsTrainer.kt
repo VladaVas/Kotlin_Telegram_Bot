@@ -1,11 +1,14 @@
 package org.example.additional
 
 import java.io.File
+import java.nio.charset.StandardCharsets
 
 data class Word(
     val word: String,
     val translation: String,
     var correctAnswersCount: Int = 0,
+    var imagePath: String? = null,
+    var fileId: String? = null,
 )
 
 data class Statistics(
@@ -85,17 +88,31 @@ class LearnWordsTrainer private constructor(
         saveDictionary(dictionary)
     }
 
+    fun save() {
+        saveDictionary(dictionary)
+    }
+
+    private fun decodeUnicode(text: String): String {
+        val regex = Regex("""\\u([0-9A-Fa-f]{4})""")
+        return regex.replace(text) {
+            val code = it.groupValues[1].toInt(16)
+            code.toChar().toString()
+        }
+    }
+
     fun addWordsFromFile(filePath: String) {
         val file = File(filePath)
         if (!file.exists()) return
-        val lines = file.readLines()
+        val lines = file.readLines(StandardCharsets.UTF_8)
         for (line in lines) {
-            val parts = line.split("|")
+            val parts = line.split(DICTIONARY_SEPARATOR)
             if (parts.size < 2) continue
             val word = Word(
-                word = parts[0].trim(),
-                translation = parts[1].trim(),
-                correctAnswersCount = parts.getOrNull(2)?.toIntOrNull() ?: 0
+                word = decodeUnicode(parts[0].trim()),
+                translation = decodeUnicode(parts[1].trim()),
+                correctAnswersCount = parts.getOrNull(2)?.toIntOrNull() ?: 0,
+                imagePath = parts.getOrNull(3)?.trim()?.takeIf { it.isNotBlank() },
+                fileId = parts.getOrNull(4)?.trim()?.takeIf { it.isNotBlank() }
             )
             if (word.word.isNotBlank() && word.translation.isNotBlank()) {
                 dictionary.add(word)
@@ -114,16 +131,21 @@ class LearnWordsTrainer private constructor(
             }
 
             val dictionary: MutableList<Word> = mutableListOf()
-            val lines: List<String> = wordsFile.readLines()
+            val lines: List<String> = wordsFile.readLines(StandardCharsets.UTF_8)
 
             for (line in lines) {
-                val parts = line.split("|")
+                val parts = line.split(DICTIONARY_SEPARATOR)
+                if (parts.size < 2) continue
                 val word = Word(
-                    word = parts[0],
-                    translation = parts[1],
-                    correctAnswersCount = parts.getOrNull(2)?.toIntOrNull() ?: 0
+                    word = decodeUnicode(parts[0].trim()),
+                    translation = decodeUnicode(parts[1].trim()),
+                    correctAnswersCount = parts.getOrNull(2)?.toIntOrNull() ?: 0,
+                    imagePath = parts.getOrNull(3)?.trim()?.takeIf { it.isNotBlank() },
+                    fileId = parts.getOrNull(4)?.trim()?.takeIf { it.isNotBlank() }
                 )
-                dictionary.add(word)
+                if (word.word.isNotBlank() && word.translation.isNotBlank()) {
+                    dictionary.add(word)
+                }
             }
             return dictionary
         } catch (_: IndexOutOfBoundsException) {
@@ -133,9 +155,17 @@ class LearnWordsTrainer private constructor(
 
     private fun saveDictionary(dictionary: List<Word>) {
         val file = File(dictionaryFileName)
-        file.printWriter().use { out ->
+        file.printWriter(StandardCharsets.UTF_8).use { out ->
             dictionary.forEach { word ->
-                out.println("${word.word}|${word.translation}|${word.correctAnswersCount}")
+                out.println(
+                    listOf(
+                        decodeUnicode(word.word),
+                        decodeUnicode(word.translation),
+                        word.correctAnswersCount.toString(),
+                        word.imagePath ?: "",
+                        word.fileId ?: ""
+                    ).joinToString(DICTIONARY_SEPARATOR)
+                )
             }
         }
     }
