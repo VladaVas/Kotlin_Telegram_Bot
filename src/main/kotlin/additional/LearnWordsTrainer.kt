@@ -92,6 +92,14 @@ class LearnWordsTrainer private constructor(
         saveDictionary(dictionary)
     }
 
+    private fun decodeUnicode(text: String): String {
+        val regex = Regex("""\\u([0-9A-Fa-f]{4})""")
+        return regex.replace(text) {
+            val code = it.groupValues[1].toInt(16)
+            code.toChar().toString()
+        }
+    }
+
     fun addWordsFromFile(filePath: String) {
         val file = File(filePath)
         if (!file.exists()) return
@@ -100,8 +108,8 @@ class LearnWordsTrainer private constructor(
             val parts = line.split(DICTIONARY_SEPARATOR)
             if (parts.size < 2) continue
             val word = Word(
-                word = parts[0].trim(),
-                translation = parts[1].trim(),
+                word = decodeUnicode(parts[0].trim()),
+                translation = decodeUnicode(parts[1].trim()),
                 correctAnswersCount = parts.getOrNull(2)?.toIntOrNull() ?: 0,
                 imagePath = parts.getOrNull(3)?.trim()?.takeIf { it.isNotBlank() },
                 fileId = parts.getOrNull(4)?.trim()?.takeIf { it.isNotBlank() }
@@ -129,8 +137,8 @@ class LearnWordsTrainer private constructor(
                 val parts = line.split(DICTIONARY_SEPARATOR)
                 if (parts.size < 2) continue
                 val word = Word(
-                    word = parts[0].trim(),
-                    translation = parts[1].trim(),
+                    word = decodeUnicode(parts[0].trim()),
+                    translation = decodeUnicode(parts[1].trim()),
                     correctAnswersCount = parts.getOrNull(2)?.toIntOrNull() ?: 0,
                     imagePath = parts.getOrNull(3)?.trim()?.takeIf { it.isNotBlank() },
                     fileId = parts.getOrNull(4)?.trim()?.takeIf { it.isNotBlank() }
@@ -151,8 +159,8 @@ class LearnWordsTrainer private constructor(
             dictionary.forEach { word ->
                 out.println(
                     listOf(
-                        word.word,
-                        word.translation,
+                        decodeUnicode(word.word),
+                        decodeUnicode(word.translation),
                         word.correctAnswersCount.toString(),
                         word.imagePath ?: "",
                         word.fileId ?: ""
