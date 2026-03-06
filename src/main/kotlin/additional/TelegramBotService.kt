@@ -1,6 +1,9 @@
 package org.example.additional
 
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonElement
+import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.buildJsonObject
 import java.io.File
 import java.io.InputStream
 import java.math.BigInteger
@@ -15,6 +18,10 @@ import java.util.Random
 
 class TelegramBotService(private val botToken: String) {
     private val client: HttpClient = HttpClient.newBuilder().build()
+    private val json = Json { ignoreUnknownKeys = true }
+    private val lastMessageIds = mutableMapOf<Long, Long>()
+
+    fun getLastMessageId(chatId: Long): Long? = lastMessageIds[chatId]
 
     fun getMe(): String {
         val urlGetMe = "$TELEGRAM_BASE_URL$botToken/getMe"
@@ -70,15 +77,119 @@ class TelegramBotService(private val botToken: String) {
             }
         }
     }
-
+    
     fun sendMessage(chatId: Long, text: String): String {
         val encodedText = URLEncoder.encode(text, "utf-8")
         val urlSendMessage = "$TELEGRAM_BASE_URL$botToken/sendMessage?chat_id=$chatId&text=$encodedText"
         val request: HttpRequest = HttpRequest.newBuilder().uri(URI.create(urlSendMessage)).build()
         val response: HttpResponse<String> =
             client.send(request, HttpResponse.BodyHandlers.ofString())
+        val body = response.body()
+        json.decodeFromString<SendMessageResponse>(body).result?.messageId?.let { lastMessageIds[chatId] = it }
+        return body
+    }
 
+    fun editMessage(chatId: Long, messageId: Long, message: String): String {
+        val encodedText = URLEncoder.encode(message, "utf-8")
+        val urlEditMessage = "$TELEGRAM_BASE_URL$botToken/editMessageText?chat_id=$chatId&message_id=$messageId&text=$encodedText"
+        val request: HttpRequest = HttpRequest.newBuilder().uri(URI.create(urlEditMessage)).build()
+        val response: HttpResponse<String> =
+            client.send(request, HttpResponse.BodyHandlers.ofString())
         return response.body()
+    }
+
+    fun editMessageWithKeyboard(chatId: Long, messageId: Long, text: String, replyMarkup: String): String {
+        val replyMarkupJson = json.parseToJsonElement(replyMarkup)
+        val requestBody = buildJsonObject {
+            put("chat_id", JsonPrimitive(chatId))
+            put("message_id", JsonPrimitive(messageId))
+            put("text", JsonPrimitive(text))
+            put("parse_mode", JsonPrimitive("HTML"))
+            put("reply_markup", replyMarkupJson)
+        }
+        val url = "$TELEGRAM_BASE_URL$botToken/editMessageText"
+        val request = HttpRequest.newBuilder()
+            .uri(URI.create(url))
+            .header("Content-Type", "application/json")
+            .POST(HttpRequest.BodyPublishers.ofString(json.encodeToString(JsonElement.serializer(), requestBody)))
+            .build()
+        val response = client.send(request, HttpResponse.BodyHandlers.ofString())
+        return response.body()
+    }
+
+    fun updateProgress(chatId: Long, messageId: Long, percent: Int) {
+        val filled = (percent / 10).coerceIn(0, 10)
+        val empty = 10 - filled
+        val progressBar = "█".repeat(filled) + "▒".repeat(empty)
+        val text = "Обработка файла... $percent%\n[$progressBar]"
+        editMessage(chatId, messageId, text)
+    }
+
+    fun showWordStatus(chatId: Long, messageId: Long, word: String, isLearned: Boolean) {
+        val status = if (isLearned) "✅ Изучено" else "❌ Не изучено"
+        val escapedWord = word.replace("<", "&lt;").replace(">", "&gt;")
+        val text = """
+            📚 Слово: <b>$escapedWord</b>
+            
+            Статус: $status
+            
+            Выбери действие:
+        """.trimIndent()
+        editMessageWithKeyboard(chatId, messageId, text, createWordMenu(isLearned))
+    }
+
+    private fun createWordMenu(isLearned: Boolean): String {
+        val buttons = if (isLearned) {
+            listOf(
+                listOf(InlineKeyboard(WORD_RESET_CALLBACK, "Сбросить прогресс \uD83E\uDDE9")),
+                listOf(InlineKeyboard(MENU_BUTTON, MENU_BUTTON_TEXT))
+            )
+        } else {
+            listOf(
+                listOf(InlineKeyboard(WORD_MARK_LEARNED_CALLBACK, "Отметить изученным ✅")),
+                listOf(InlineKeyboard(MENU_BUTTON, MENU_BUTTON_TEXT))
+            )
+        }
+        return json.encodeToString(ReplyMarkup.serializer(), ReplyMarkup(buttons))
+    }
+
+    fun safeEditMessage(chatId: Long, messageId: Long, newText: String): Boolean {
+        return try {
+            val response = editMessage(chatId, messageId, newText)
+            val jsonResponse = json.decodeFromString<EditMessageResponse>(response)
+            if (jsonResponse.ok) return true
+            val desc = jsonResponse.description.orEmpty()
+            when {
+                desc.contains("message is not modified", ignoreCase = true) -> {
+                    println("Текст не изменился")
+                    true
+                }
+                desc.contains("message to edit not found", ignoreCase = true) || desc.contains("MESSAGE_EDIT_TIME_EXPIRED") -> {
+                    println("Время редактирования истекло (48 ч)")
+                    false
+                }
+                else -> {
+                    println("Ошибка редактирования: $desc")
+                    false
+                }
+            }
+        } catch (e: Exception) {
+            val desc = (e.cause?.message ?: e.message).orEmpty()
+            when {
+                desc.contains("message is not modified", ignoreCase = true) -> {
+                    println("Текст не изменился")
+                    true
+                }
+                desc.contains("MESSAGE_EDIT_TIME_EXPIRED", ignoreCase = true) -> {
+                    println("Время редактирования истекло (48 ч)")
+                    false
+                }
+                else -> {
+                    println("Ошибка редактирования: $desc")
+                    false
+                }
+            }
+        }
     }
 
     fun sendPhoto(file: File, chatId: Long, hasSpoiler: Boolean = false): String {
@@ -93,7 +204,9 @@ class TelegramBotService(private val botToken: String) {
             .postMultipartFormData(boundary, data)
             .build()
         val response = client.send(request, HttpResponse.BodyHandlers.ofString())
-        return response.body()
+        val body = response.body()
+        json.decodeFromString<SendPhotoResponse>(body).result?.messageId?.let { lastMessageIds[chatId] = it }
+        return body
     }
 
     fun sendPhotoByFileId(fileId: String, chatId: Long, hasSpoiler: Boolean = false): String {
@@ -104,7 +217,9 @@ class TelegramBotService(private val botToken: String) {
             .POST(HttpRequest.BodyPublishers.ofString(body))
             .build()
         val response = client.send(request, HttpResponse.BodyHandlers.ofString())
-        return response.body()
+        val responseBody = response.body()
+        json.decodeFromString<SendPhotoResponse>(responseBody).result?.messageId?.let { lastMessageIds[chatId] = it }
+        return responseBody
     }
 
     fun sendPhotoForWord(
@@ -197,8 +312,9 @@ class TelegramBotService(private val botToken: String) {
             .build()
         val response: HttpResponse<String> =
             client.send(request, HttpResponse.BodyHandlers.ofString())
-
-        return response.body()
+        val body = response.body()
+        chatId?.let { id -> json.decodeFromString<SendMessageResponse>(body).result?.messageId?.let { lastMessageIds[id] = it } }
+        return body
     }
 
     fun sendQuestion(chatId: Long, question: Question): String {
@@ -231,8 +347,42 @@ class TelegramBotService(private val botToken: String) {
             .build()
         val response: HttpResponse<String> =
             client.send(request, HttpResponse.BodyHandlers.ofString())
+        val body = response.body()
+        json.decodeFromString<SendMessageResponse>(body).result?.messageId?.let { lastMessageIds[chatId] = it }
+        return body
+    }
 
-        return response.body()
+    fun formatStatisticsWithProgressBar(statistics: Statistics): String {
+        val percent = statistics.percent.coerceIn(0, 100)
+        val filled = (percent / 10).coerceIn(0, 10)
+        val empty = 10 - filled
+        val progressBar = "█".repeat(filled) + "▒".repeat(empty)
+        return """
+            📊 Ваш прогресс:
+            
+            ✅ Выучено слов: ${statistics.learnedWords}
+            📚 Всего слов в словаре: ${statistics.totalCount}
+            📈 Прогресс: $percent%
+            [$progressBar]
+        """.trimIndent()
+    }
+
+    fun sendOrUpdateDynamicStats(
+        chatId: Long,
+        trainer: LearnWordsTrainer?,
+        dynamicMessage: DynamicMessage,
+        prefix: String,
+    ) {
+        val statistics = trainer?.getStatistics() ?: return
+        val statsText = formatStatisticsWithProgressBar(statistics)
+        val fullText = prefix + statsText
+        val messageId = dynamicMessage.getMessageId(chatId)
+        if (messageId != null) {
+            dynamicMessage.updateAndPush(chatId, fullText)
+        } else {
+            sendMessage(chatId, fullText)
+            getLastMessageId(chatId)?.let { dynamicMessage.setMessage(chatId, it, fullText) }
+        }
     }
 
     fun checkNextQuestionAndSend(
@@ -252,7 +402,7 @@ class TelegramBotService(private val botToken: String) {
                 imageDir = imageDir,
                 json = json,
                 hasSpoiler = true,
-                onFileIdSaved = { trainer?.save() }
+                onFileIdSaved = { trainer.save() }
             )
             telegramBotService.sendQuestion(chatId, nextQuestion)
         }
@@ -264,14 +414,31 @@ class TelegramBotService(private val botToken: String) {
         trainer: LearnWordsTrainer?,
         botService: TelegramBotService,
         correctWord: Word?,
+        dynamicMessage: DynamicMessage? = null,
     ) {
         val userAnswerIndex = callbackData?.substringAfter(CALLBACK_DATA_ANSWER_PREFIX)?.toIntOrNull()
         val isCorrectAnswer = trainer?.checkAnswer(userAnswerIndex)
 
-        if (userAnswerIndex != null && isCorrectAnswer == true) {
-            botService.sendMessage(chatId, CORRECT_ANSWER)
+        if (dynamicMessage != null) {
+            val prefix = if (userAnswerIndex != null && isCorrectAnswer == true) {
+                "$CORRECT_ANSWER\n\n"
+            } else {
+                "Неправильно!\n${correctWord?.word} – это ${correctWord?.translation}\n\n"
+            }
+            botService.sendOrUpdateDynamicStats(chatId, trainer, dynamicMessage, prefix)
+            if (correctWord != null && (userAnswerIndex == null || isCorrectAnswer != true)) {
+                botService.sendMessage(chatId, "📚 ${correctWord.word}")
+                botService.getLastMessageId(chatId)?.let { msgId ->
+                    val learned = (trainer?.dictionary?.find { it.word == correctWord.word }?.correctAnswersCount ?: 0) >= CORRECT_ANSWERS
+                    botService.showWordStatus(chatId, msgId, correctWord.word, learned)
+                }
+            }
         } else {
-            botService.sendMessage(chatId, "Неправильно!\n${correctWord?.word} – это ${correctWord?.translation}")
+            if (userAnswerIndex != null && isCorrectAnswer == true) {
+                botService.sendMessage(chatId, CORRECT_ANSWER)
+            } else {
+                botService.sendMessage(chatId, "Неправильно!\n${correctWord?.word} – это ${correctWord?.translation}")
+            }
         }
     }
 }
