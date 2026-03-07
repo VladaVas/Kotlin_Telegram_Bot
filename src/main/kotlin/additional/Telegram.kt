@@ -1,143 +1,14 @@
 package org.example.additional
 
-import kotlinx.serialization.SerialName
-import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import java.io.File
-
-@Serializable
-data class Update(
-    @SerialName("update_id")
-    val updateId: Long,
-    @SerialName("message")
-    val message: Message? = null,
-    @SerialName("callback_query")
-    val callbackQuery: CallbackQuery? = null,
-)
-
-@Serializable
-data class Response(
-    @SerialName("result")
-    val result: List<Update>,
-)
-
-@Serializable
-data class Document(
-    @SerialName("file_name")
-    val fileName: String,
-    @SerialName("mime_type")
-    val mimeType: String,
-    @SerialName("file_id")
-    val fileId: String,
-    @SerialName("file_unique_id")
-    val fileUniqueId: String,
-    @SerialName("file_size")
-    val fileSize: Long,
-)
-
-@Serializable
-data class Message(
-    @SerialName("text")
-    val text: String? = null,
-    @SerialName("chat")
-    val chat: Chat,
-    @SerialName("document")
-    val document: Document? = null,
-)
-
-@Serializable
-data class GetFileRequest(
-    @SerialName("file_id")
-    val fileId: String,
-)
-
-@Serializable
-data class GetFileResponse(
-    @SerialName("ok")
-    val ok: Boolean,
-    @SerialName("result")
-    val result: TelegramFile? = null,
-)
-
-@Serializable
-data class TelegramFile(
-    @SerialName("file_id")
-    val fileId: String,
-    @SerialName("file_unique_id")
-    val fileUniqueId: String,
-    @SerialName("file_size")
-    val fileSize: Long,
-    @SerialName("file_path")
-    val filePath: String,
-)
-
-@Serializable
-data class CallbackQuery(
-    @SerialName("data")
-    val data: String,
-    @SerialName("message")
-    val message: Message,
-)
-
-@Serializable
-data class Chat(
-    @SerialName("id")
-    val id: Long,
-)
-
-@Serializable
-data class SendMessageRequest(
-    @SerialName("chat_id")
-    val chatId: Long?,
-    @SerialName("text")
-    val text: String,
-    @SerialName("reply_markup")
-    val replyMarkup: ReplyMarkup? = null,
-)
-
-@Serializable
-data class ReplyMarkup(
-    @SerialName("inline_keyboard")
-    val inlineKeyboard: List<List<InlineKeyboard>>,
-)
-
-@Serializable
-data class InlineKeyboard(
-    @SerialName("callback_data")
-    val callbackData: String,
-    @SerialName("text")
-    val text: String,
-)
-
-@Serializable
-data class PhotoSize(
-    @SerialName("file_id")
-    val fileId: String,
-    @SerialName("file_size")
-    val fileSize: Long = 0,
-)
-
-@Serializable
-data class SendPhotoResult(
-    @SerialName("message_id")
-    val messageId: Long,
-    @SerialName("photo")
-    val photo: List<PhotoSize>? = null,
-)
-
-@Serializable
-data class SendPhotoResponse(
-    @SerialName("ok")
-    val ok: Boolean,
-    @SerialName("result")
-    val result: SendPhotoResult? = null,
-)
 
 fun main(args: Array<String>) {
 
     val botToken = args[0]
     var lastUpdateId = 0L
     val botService = TelegramBotService(botToken)
+    val dynamicMessage = DynamicMessage(botService)
     val trainers = HashMap<Long, LearnWordsTrainer>()
     val imageDir = File(IMAGES_FOLDER)
 
@@ -172,9 +43,27 @@ fun main(args: Array<String>) {
                 val getFileResponse: GetFileResponse = json.decodeFromString(jsonResponse)
                 getFileResponse.result?.let { telegramFile ->
                     val localFileName = "word_upload_$chatIdString.txt"
+                    botService.sendMessage(chatIdString, "Обработка файла... 0%\n[▒▒▒▒▒▒▒▒▒▒]")
+                    val progressMessageId = botService.getLastMessageId(chatIdString)
+                    if (progressMessageId != null) {
+                        botService.updateProgress(chatIdString, progressMessageId, 50)
+                    }
                     botService.downloadFile(telegramFile.filePath, localFileName)
                     trainer.addWordsFromFile(localFileName)
-                    botService.sendMessage(chatIdString, "Словарь обновлён: добавлены слова из файла ${document.fileName}.")
+                    if (progressMessageId != null) {
+                        botService.updateProgress(chatIdString, progressMessageId, 100)
+                        botService.editMessage(chatIdString, progressMessageId, "Словарь обновлён: добавлены слова из файла ${document.fileName}.")
+                    } else {
+                        botService.sendMessage(chatIdString, "Словарь обновлён: добавлены слова из файла ${document.fileName}.")
+                    }
+                }
+            }
+
+            if (chatIdString != null && message == UNDO_COMMAND) {
+                if (dynamicMessage.undo(chatIdString)) {
+                    botService.sendMessage(chatIdString, "↩ Возврат к предыдущему сообщению.")
+                } else {
+                    botService.sendMessage(chatIdString, "Нечего откатывать.")
                 }
             }
 
@@ -193,7 +82,8 @@ fun main(args: Array<String>) {
                     callBackQueryData,
                     trainer,
                     botService,
-                    trainer.question?.correctAnswer
+                    trainer.question?.correctAnswer,
+                    dynamicMessage,
                 )
                 botService.checkNextQuestionAndSend(trainer, botService, callbackChatId, imageDir, json)
             }
@@ -206,15 +96,11 @@ fun main(args: Array<String>) {
                     }
 
                     STATISTICS_CALLBACK -> {
-                        val statistics = trainer.getStatistics()
-                        val statsMessageBody = """
-                        📊 Ваш прогресс:
-                        
-                        ✅ Выучено слов: ${statistics.learnedWords}
-                        📚 Всего слов в словаре: ${statistics.totalCount}
-                        📈 Прогресс: ${statistics.percent}%
-                    """.trimIndent()
+                        val statsMessageBody = botService.formatStatisticsWithProgressBar(trainer.getStatistics())
                         botService.sendMessage(callbackChatId, statsMessageBody)
+                        botService.getLastMessageId(callbackChatId)?.let { messageId ->
+                            dynamicMessage.setMessage(callbackChatId, messageId, statsMessageBody)
+                        }
                     }
 
                     RESET_PROGRESS_CALLBACK -> {

@@ -100,6 +100,12 @@ class LearnWordsTrainer private constructor(
         }
     }
 
+    private fun encodeUnicode(text: String): String {
+        return text.map { ch ->
+            if (ch.code in 0..127) ch.toString() else "\\u%04X".format(ch.code)
+        }.joinToString("")
+    }
+
     fun addWordsFromFile(filePath: String) {
         val file = File(filePath)
         if (!file.exists()) return
@@ -159,8 +165,8 @@ class LearnWordsTrainer private constructor(
             dictionary.forEach { word ->
                 out.println(
                     listOf(
-                        decodeUnicode(word.word),
-                        decodeUnicode(word.translation),
+                        encodeUnicode(word.word),
+                        encodeUnicode(word.translation),
                         word.correctAnswersCount.toString(),
                         word.imagePath ?: "",
                         word.fileId ?: ""
