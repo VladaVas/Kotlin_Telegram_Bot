@@ -35,6 +35,8 @@ data class Document(
 
 @Serializable
 data class Message(
+    @SerialName("message_id")
+    val messageId: Long? = null,
     @SerialName("text")
     val text: String? = null,
     @SerialName("chat")
