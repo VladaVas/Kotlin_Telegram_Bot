@@ -4,7 +4,6 @@ import kotlinx.serialization.json.Json
 import java.io.File
 
 fun main(args: Array<String>) {
-
     val botToken = args[0]
     var lastUpdateId = 0L
     val botService = TelegramBotService(botToken)
@@ -15,8 +14,6 @@ fun main(args: Array<String>) {
     val json = Json {
         ignoreUnknownKeys = true
     }
-
-    println(botService.getMe())
 
     while (true) {
         Thread.sleep(2000)

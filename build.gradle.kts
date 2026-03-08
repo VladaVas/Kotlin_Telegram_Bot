@@ -25,6 +25,17 @@ tasks.test {
     useJUnitPlatform()
 }
 
-    application {
-        mainClass.set("org.example.additional.TelegramKt")
+application {
+    mainClass.set("org.example.additional.TelegramKt")
+}
+
+tasks {
+    named<com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar>("shadowJar") {
+        archiveBaseName.set("KotlinTelegramBot")
+        archiveClassifier.set("")
+        mergeServiceFiles()
+        manifest {
+            attributes["Main-Class"] = "org.example.additional.TelegramKt"
+        }
     }
+}
