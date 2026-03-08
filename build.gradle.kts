@@ -26,5 +26,5 @@ tasks.test {
 }
 
     application {
-        mainClass.set("org.example.additional.Telegram.kt")
+        mainClass.set("org.example.additional.TelegramKt")
     }
