@@ -126,7 +126,7 @@ fun main(args: Array<String>) {
 
                     else -> {
                         if (callBackQueryData != null) {
-                            val messageId = update.callbackQuery?.message?.messageId
+                            val messageId = update.callbackQuery.message.messageId
                             when {
                                 callBackQueryData.startsWith(WORD_MARK_LEARNED_PREFIX) -> {
                                     val word = callBackQueryData.removePrefix(WORD_MARK_LEARNED_PREFIX)
