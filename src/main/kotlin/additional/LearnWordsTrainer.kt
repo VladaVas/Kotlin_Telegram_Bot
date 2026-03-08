@@ -94,6 +94,13 @@ class LearnWordsTrainer private constructor(
         return true
     }
 
+    fun resetWordProgress(wordText: String): Boolean {
+        val word = dictionary.find { it.word == wordText } ?: return false
+        word.correctAnswersCount = 0
+        saveDictionary(dictionary)
+        return true
+    }
+
     private fun decodeUnicode(text: String): String {
         val regex = Regex("""\\u([0-9A-Fa-f]{4})""")
         return regex.replace(text) {
