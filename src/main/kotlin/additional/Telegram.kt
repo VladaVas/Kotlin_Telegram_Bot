@@ -125,11 +125,21 @@ fun main(args: Array<String>) {
                     }
 
                     else -> {
-                        if (callBackQueryData != null && callBackQueryData.startsWith(WORD_MARK_LEARNED_PREFIX)) {
-                            val word = callBackQueryData.removePrefix(WORD_MARK_LEARNED_PREFIX)
-                            val messageId = update.callbackQuery.message.messageId
-                            if (trainer.markWordAsLearned(word) && messageId != null) {
-                                botService.showWordStatus(callbackChatId, messageId, word, isLearned = true)
+                        if (callBackQueryData != null) {
+                            val messageId = update.callbackQuery?.message?.messageId
+                            when {
+                                callBackQueryData.startsWith(WORD_MARK_LEARNED_PREFIX) -> {
+                                    val word = callBackQueryData.removePrefix(WORD_MARK_LEARNED_PREFIX)
+                                    if (trainer.markWordAsLearned(word) && messageId != null) {
+                                        botService.showWordStatus(callbackChatId, messageId, word, isLearned = true)
+                                    }
+                                }
+                                callBackQueryData.startsWith(WORD_RESET_PREFIX) -> {
+                                    val word = callBackQueryData.removePrefix(WORD_RESET_PREFIX)
+                                    if (trainer.resetWordProgress(word) && messageId != null) {
+                                        botService.showWordStatus(callbackChatId, messageId, word, isLearned = false)
+                                    }
+                                }
                             }
                         }
                     }

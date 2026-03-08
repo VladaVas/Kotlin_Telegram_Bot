@@ -105,7 +105,7 @@ class TelegramBotService(private val botToken: String) {
     }
 
     fun showWordStatus(chatId: Long, messageId: Long, word: String, isLearned: Boolean) {
-        val status = if (isLearned) "✅ Изучено" else "❌ Не изучено"
+        val status = if (isLearned) "Изучено ✅" else "Не изучено ❌"
         val escapedWord = word.replace("<", "&lt;").replace(">", "&gt;")
         val text = """
             📚 Слово: <b>$escapedWord</b>
@@ -118,12 +118,11 @@ class TelegramBotService(private val botToken: String) {
     private fun createWordMenu(isLearned: Boolean, word: String): String {
         val buttons = if (isLearned) {
             listOf(
-                listOf(InlineKeyboard(WORD_RESET_CALLBACK, "Сбросить прогресс \uD83E\uDDE9")),
-                listOf(InlineKeyboard(MENU_BUTTON, MENU_BUTTON_TEXT))
+                listOf(InlineKeyboard(WORD_RESET_PREFIX + word, "Отметить не выученным ❌")),
             )
         } else {
             listOf(
-                listOf(InlineKeyboard(WORD_MARK_LEARNED_PREFIX + word, "Отметить изученным ✅"))
+                listOf(InlineKeyboard(WORD_MARK_LEARNED_PREFIX + word, "Отметить выученным ✅"))
             )
         }
         return json.encodeToString(ReplyMarkup.serializer(), ReplyMarkup(buttons))
@@ -343,6 +342,7 @@ class TelegramBotService(private val botToken: String) {
                 } + listOf(listOf(InlineKeyboard(MENU_BUTTON, MENU_BUTTON_TEXT)))
             )
             val imageFile = findImageFile(nextQuestion.correctAnswer, imageDir)
+
             if (imageFile != null) {
                 val cachedFileId = nextQuestion.correctAnswer.fileId
                 if (cachedFileId != null) {
@@ -381,6 +381,7 @@ class TelegramBotService(private val botToken: String) {
                 sendMessage(chatId, wrongText)
                 getLastMessageId(chatId)?.let { dynamicMessage.setMessage(chatId, it, wrongText) }
             }
+
             if (correctWord != null && !isCorrect) {
                 sendMessage(chatId, "📚 ${correctWord.word}")
                 getLastMessageId(chatId)?.let { msgId ->
