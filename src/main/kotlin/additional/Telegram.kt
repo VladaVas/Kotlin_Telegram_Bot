@@ -4,6 +4,7 @@ import kotlinx.serialization.json.Json
 import java.io.File
 
 fun main(args: Array<String>) {
+
     val botToken = args[0]
     var lastUpdateId = 0L
     val botService = TelegramBotService(botToken)
