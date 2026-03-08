@@ -150,6 +150,9 @@ class LearnWordsTrainer private constructor(
 
             for (line in lines) {
                 val parts = line.split(DICTIONARY_SEPARATOR)
+                if (line.isNotBlank() && parts.size < 2) {
+                    throw IllegalStateException("Некорректный файл.\nНевозможно загрузить словарь.")
+                }
                 if (parts.size < 2) continue
                 val word = Word(
                     word = decodeUnicode(parts[0].trim()),
