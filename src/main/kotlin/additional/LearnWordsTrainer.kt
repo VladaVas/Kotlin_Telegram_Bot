@@ -71,16 +71,11 @@ class LearnWordsTrainer private constructor(
     }
 
     fun checkAnswer(userAnswerIndex: Int?): Boolean {
-        if (question == null || userAnswerIndex == null) return false
-        val correctAnswerId: Int? = question?.questionWords?.indexOf(question?.correctAnswer)
-
-        if (correctAnswerId == userAnswerIndex) {
-            question?.correctAnswer?.correctAnswersCount++
-            saveDictionary(dictionary)
-            return true
-        } else {
-            return false
-        }
+        val q = question ?: return false
+        if (userAnswerIndex == null || q.questionWords.getOrNull(userAnswerIndex) != q.correctAnswer) return false
+        q.correctAnswer.correctAnswersCount++
+        saveDictionary(dictionary)
+        return true
     }
 
     fun resetProgress() {
@@ -90,6 +85,13 @@ class LearnWordsTrainer private constructor(
 
     fun save() {
         saveDictionary(dictionary)
+    }
+
+    fun markWordAsLearned(wordText: String): Boolean {
+        val word = dictionary.find { it.word == wordText } ?: return false
+        word.correctAnswersCount = CORRECT_ANSWERS
+        saveDictionary(dictionary)
+        return true
     }
 
     private fun decodeUnicode(text: String): String {

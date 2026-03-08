@@ -8,3 +8,10 @@ pink|розовый|0|pink.png|
 notice|замечать|0|notice.png|
 coincidence|совпадение|0|coincidence.png|
 compatibility|совместимость|0|compatibility.png|
+define|определять|0|
+solve|решать|0|
+serve|служить|0|
+empty|пустой|0|
+full|полный|0|
+narrow|узкий|0|
+wide|широкий|0|

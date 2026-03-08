@@ -56,6 +56,7 @@ fun main(args: Array<String>) {
                     } else {
                         botService.sendMessage(chatIdString, "Словарь обновлён: добавлены слова из файла ${document.fileName}.")
                     }
+                    botService.sendMenu(chatIdString)
                 }
             }
 
@@ -69,31 +70,31 @@ fun main(args: Array<String>) {
 
             if (chatIdString != null && message?.startsWith(START_BUTTON) == true) {
                 trainers.getOrPut(chatIdString) { LearnWordsTrainer(chatIdString) }
-                botService.sendMessage(chatIdString, HELLO_TEXT)
+                val startImage = File(imageDir, START_IMAGE_FILENAME)
+                if (startImage.exists() && startImage.isFile) {
+                    botService.sendPhoto(startImage, chatIdString, caption = HELLO_TEXT)
+                } else {
+                    botService.sendMessage(chatIdString, HELLO_TEXT)
+                }
                 botService.sendMenu(chatIdString)
             }
             val callBackQueryData = update.callbackQuery?.data
             val callbackChatId = update.callbackQuery?.message?.chat?.id
 
-            if (callbackChatId != null && callBackQueryData?.startsWith(CALLBACK_DATA_ANSWER_PREFIX) == true) {
-                val trainer = trainers.getOrPut(callbackChatId) { LearnWordsTrainer(callbackChatId) }
-                botService.checkAnswer(
-                    callbackChatId,
-                    callBackQueryData,
-                    trainer,
-                    botService,
-                    trainer.question?.correctAnswer,
-                    dynamicMessage,
-                )
-                botService.checkNextQuestionAndSend(trainer, botService, callbackChatId, imageDir, json)
-            }
-
             if (callbackChatId != null) {
                 val trainer = trainers.getOrPut(callbackChatId) { LearnWordsTrainer(callbackChatId) }
+                if (callBackQueryData?.startsWith(CALLBACK_DATA_ANSWER_PREFIX) == true) {
+                    botService.checkAnswer(
+                        callbackChatId,
+                        callBackQueryData,
+                        trainer,
+                        trainer.question?.correctAnswer,
+                        dynamicMessage,
+                    )
+                    botService.checkNextQuestionAndSend(trainer, callbackChatId, imageDir, json)
+                }
                 when (callBackQueryData) {
-                    LEARN_WORDS_CALLBACK -> {
-                        botService.checkNextQuestionAndSend(trainer, botService, callbackChatId, imageDir, json)
-                    }
+                    LEARN_WORDS_CALLBACK -> botService.checkNextQuestionAndSend(trainer, callbackChatId, imageDir, json)
 
                     STATISTICS_CALLBACK -> {
                         val statsMessageBody = botService.formatStatisticsWithProgressBar(trainer.getStatistics())
@@ -101,6 +102,7 @@ fun main(args: Array<String>) {
                         botService.getLastMessageId(callbackChatId)?.let { messageId ->
                             dynamicMessage.setMessage(callbackChatId, messageId, statsMessageBody)
                         }
+                        botService.sendMenu(callbackChatId)
                     }
 
                     RESET_PROGRESS_CALLBACK -> {
@@ -114,7 +116,22 @@ fun main(args: Array<String>) {
                     }
 
                     EXIT_BUTTON -> {
-                        botService.sendMessage(callbackChatId, EXIT_TEXT)
+                        val pauseImage = File(imageDir, PAUSE_IMAGE_FILENAME)
+                        if (pauseImage.exists() && pauseImage.isFile) {
+                            botService.sendPhoto(pauseImage, callbackChatId, caption = EXIT_TEXT)
+                        } else {
+                            botService.sendMessage(callbackChatId, EXIT_TEXT)
+                        }
+                    }
+
+                    else -> {
+                        if (callBackQueryData != null && callBackQueryData.startsWith(WORD_MARK_LEARNED_PREFIX)) {
+                            val word = callBackQueryData.removePrefix(WORD_MARK_LEARNED_PREFIX)
+                            val messageId = update.callbackQuery.message.messageId
+                            if (trainer.markWordAsLearned(word) && messageId != null) {
+                                botService.showWordStatus(callbackChatId, messageId, word, isLearned = true)
+                            }
+                        }
                     }
                 }
             }
