@@ -28,18 +28,3 @@ tasks.test {
 application {
     mainClass.set("org.example.additional.TelegramKt")
 }
-
-tasks.named<com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar>("shadowJar") {
-    archiveClassifier.set("all")
-    manifest {
-        attributes["Main-Class"] = "org.example.additional.TelegramKt"
-    }
-    from(sourceSets.main.get().output)
-}
-
-tasks.register<Copy>("deployBot") {
-    dependsOn("shadowJar")
-    from("build/libs/KotlinTelegramBot-1.0-SNAPSHOT-all.jar")
-    into("/root")
-    rename { "bot.jar" }
-}
