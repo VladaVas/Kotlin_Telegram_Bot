@@ -29,13 +29,12 @@ application {
     mainClass.set("org.example.additional.TelegramKt")
 }
 
-tasks {
-    named<com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar>("shadowJar") {
-        archiveClassifier.set("all")
-        manifest {
-            attributes["Main-Class"] = "org.example.additional.TelegramKt"
-        }
+tasks.named<com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar>("shadowJar") {
+    archiveClassifier.set("all")
+    manifest {
+        attributes["Main-Class"] = "org.example.additional.TelegramKt"
     }
+    from(sourceSets.main.get().output)
 }
 
 tasks.register<Copy>("deployBot") {
