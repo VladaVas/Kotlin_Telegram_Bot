@@ -25,3 +25,4 @@ const val WORD_RESET_PREFIX = "word_reset|"
 const val IMAGES_FOLDER = "images"
 val IMAGE_EXTENSIONS = listOf("jpg", "jpeg", "png", "gif", "webp")
 const val DICTIONARY_SEPARATOR = "|"
+const val DB_URL = "jdbc:sqlite:data.db"

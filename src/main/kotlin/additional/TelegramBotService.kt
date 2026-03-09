@@ -385,7 +385,7 @@ class TelegramBotService(private val botToken: String) {
             if (correctWord != null && !isCorrect) {
                 sendMessage(chatId, "📚 ${correctWord.word}")
                 getLastMessageId(chatId)?.let { msgId ->
-                    val learned = (trainer?.dictionary?.find { it.word == correctWord.word }?.correctAnswersCount ?: 0) >= CORRECT_ANSWERS
+                    val learned = (trainer?.getCorrectAnswersCount(correctWord.word) ?: 0) >= CORRECT_ANSWERS
                     showWordStatus(chatId, msgId, correctWord.word, learned)
                 }
             }
