@@ -103,7 +103,7 @@ class DatabaseUserDictionary(
         ).let { if (it >= 0) it else 0 }
     }
 
-    override fun updateWordFileId(word: String, fileId: String) {
+    override fun updateWordFileId(word: String?, fileId: String) {
         DriverManager.getConnection(DB_URL).use { connection ->
             connection.prepareStatement("UPDATE words SET file_id = ? WHERE user_id = ? AND text = ?").use { stmt ->
                 stmt.setString(1, fileId)

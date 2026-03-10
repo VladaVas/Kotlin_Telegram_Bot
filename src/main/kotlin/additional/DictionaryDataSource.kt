@@ -17,11 +17,32 @@ private val CREATE_WORDS_TABLE = """
     );
 """.trimIndent()
 
+private val CREATE_USERS_TABLE = """
+    CREATE TABLE IF NOT EXISTS users (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        chat_id INTEGER NOT NULL UNIQUE
+    );
+""".trimIndent()
+
+private val CREATE_USER_ANSWERS_TABLE = """
+    CREATE TABLE IF NOT EXISTS user_answers (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id INTEGER NOT NULL,
+        word_id INTEGER NOT NULL,
+        is_correct INTEGER NOT NULL,
+        answered_at INTEGER NOT NULL DEFAULT (strftime('%s','now')),
+        FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE,
+        FOREIGN KEY(word_id) REFERENCES words(id) ON DELETE CASCADE
+    );
+""".trimIndent()
+
 fun createWordsTable() {
     DriverManager.getConnection(DB_URL).use { connection ->
         connection.createStatement().use { statement ->
             statement.queryTimeout = 30
             statement.executeUpdate(CREATE_WORDS_TABLE)
+            statement.executeUpdate(CREATE_USERS_TABLE)
+            statement.executeUpdate(CREATE_USER_ANSWERS_TABLE)
         }
     }
 }

@@ -11,5 +11,5 @@ interface IUserDictionary {
     fun clearDictionary()
     fun addWordsFromFile(filePath: String)
     fun getCorrectAnswersCount(word: String): Int
-    fun updateWordFileId(word: String, fileId: String)
+    fun updateWordFileId(word: String?, fileId: String)
 }

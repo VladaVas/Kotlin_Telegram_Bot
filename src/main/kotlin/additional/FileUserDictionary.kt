@@ -71,7 +71,7 @@ class FileUserDictionary(
     override fun getCorrectAnswersCount(word: String): Int =
         dictionary.find { it.word == word }?.correctAnswersCount ?: 0
 
-    override fun updateWordFileId(word: String, fileId: String) {
+    override fun updateWordFileId(word: String?, fileId: String) {
         dictionary.find { it.word == word }?.fileId = fileId
         saveDictionary()
     }

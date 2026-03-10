@@ -79,7 +79,7 @@ class LearnWordsTrainer private constructor(
 
     fun save() {
         question?.correctAnswer?.fileId?.let { fileId ->
-            userDictionary.updateWordFileId(question!!.correctAnswer.word, fileId)
+            userDictionary.updateWordFileId(question?.correctAnswer?.word, fileId)
         }
     }
 
