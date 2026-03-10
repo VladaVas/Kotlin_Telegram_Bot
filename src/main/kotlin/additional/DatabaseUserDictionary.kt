@@ -60,10 +60,22 @@ class DatabaseUserDictionary(
         }
     }
 
+    override fun clearDictionary() {
+        DriverManager.getConnection(DB_URL).use { connection ->
+            connection.prepareStatement("DELETE FROM words WHERE user_id = ?").use { stmt ->
+                stmt.setLong(1, userId)
+                stmt.executeUpdate()
+            }
+        }
+    }
+
     override fun addWordsFromFile(filePath: String) {
         val file = File(filePath)
         if (!file.exists()) return
-        val lines = file.readLines(StandardCharsets.UTF_8)
+        val rawLines = file.readLines(StandardCharsets.UTF_8)
+        val lines = rawLines.mapIndexed { index, line ->
+            if (index == 0 && line.startsWith("\uFEFF")) line.drop(1) else line
+        }
         DriverManager.getConnection(DB_URL).use { connection ->
             connection.prepareStatement(
                 "INSERT OR IGNORE INTO words (user_id, text, translate, correct_answers_count) VALUES (?, ?, ?, 0)"
@@ -155,14 +167,6 @@ class DatabaseUserDictionary(
                 }
                 return list
             }
-        }
-    }
-
-    private fun decodeUnicode(text: String): String {
-        val regex = Regex("""\\u([0-9A-Fa-f]{4})""")
-        return regex.replace(text) {
-            val code = it.groupValues[1].toInt(16)
-            code.toChar().toString()
         }
     }
 }

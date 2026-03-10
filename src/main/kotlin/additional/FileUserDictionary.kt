@@ -39,10 +39,18 @@ class FileUserDictionary(
         saveDictionary()
     }
 
+    override fun clearDictionary() {
+        dictionary.clear()
+        saveDictionary()
+    }
+
     override fun addWordsFromFile(filePath: String) {
         val file = File(filePath)
         if (!file.exists()) return
-        val lines = file.readLines(StandardCharsets.UTF_8)
+        val rawLines = file.readLines(StandardCharsets.UTF_8)
+        val lines = rawLines.mapIndexed { index, line ->
+            if (index == 0 && line.startsWith("\uFEFF")) line.drop(1) else line
+        }
         for (line in lines) {
             val parts = line.split(DICTIONARY_SEPARATOR)
             if (parts.size < 2) continue
@@ -66,14 +74,6 @@ class FileUserDictionary(
     override fun updateWordFileId(word: String, fileId: String) {
         dictionary.find { it.word == word }?.fileId = fileId
         saveDictionary()
-    }
-
-    private fun decodeUnicode(text: String): String {
-        val regex = Regex("""\\u([0-9A-Fa-f]{4})""")
-        return regex.replace(text) {
-            val code = it.groupValues[1].toInt(16)
-            code.toChar().toString()
-        }
     }
 
     private fun encodeUnicode(text: String): String =

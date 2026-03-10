@@ -22,14 +22,6 @@ class TelegramBotService(private val botToken: String) {
 
     fun getLastMessageId(chatId: Long): Long? = lastMessageIds[chatId]
 
-    fun getMe(): String {
-        val urlGetMe = "$TELEGRAM_BASE_URL$botToken/getMe"
-        val request: HttpRequest = HttpRequest.newBuilder().uri(URI.create(urlGetMe)).build()
-        val response: HttpResponse<String> = client.send(request, HttpResponse.BodyHandlers.ofString())
-
-        return response.body()
-    }
-
     fun getUpdates(updateId: Long): String {
         val urlGetUpdates = "$TELEGRAM_BASE_URL$botToken/getUpdates?offset=$updateId"
         val request: HttpRequest = HttpRequest.newBuilder().uri(URI.create(urlGetUpdates)).build()
@@ -50,15 +42,19 @@ class TelegramBotService(private val botToken: String) {
     }
 
     fun downloadFile(filePath: String, fileName: String) {
-        val request = HttpRequest.newBuilder().uri(URI.create("$BOT_FILE_URL$botToken/$filePath")).GET().build()
+        val encodedPath = filePath.split("/").map { segment ->
+            URLEncoder.encode(segment, StandardCharsets.UTF_8).replace("+", "%20")
+        }.joinToString("/")
+        val request = HttpRequest.newBuilder().uri(URI.create("$BOT_FILE_URL$botToken/$encodedPath")).GET().build()
         client.send(request, HttpResponse.BodyHandlers.ofInputStream()).body().use { input ->
             File(fileName).outputStream().use { output -> input.copyTo(output, 16 * 1024) }
         }
     }
 
-    fun sendMessage(chatId: Long, text: String): String {
+    fun sendMessage(chatId: Long, text: String, parseMode: String? = null): String {
         val encodedText = URLEncoder.encode(text, "utf-8")
-        val urlSendMessage = "$TELEGRAM_BASE_URL$botToken/sendMessage?chat_id=$chatId&text=$encodedText"
+        val parseModeParam = parseMode?.let { "&parse_mode=$it" }.orEmpty()
+        val urlSendMessage = "$TELEGRAM_BASE_URL$botToken/sendMessage?chat_id=$chatId&text=$encodedText$parseModeParam"
         val request: HttpRequest = HttpRequest.newBuilder().uri(URI.create(urlSendMessage)).build()
         val response: HttpResponse<String> =
             client.send(request, HttpResponse.BodyHandlers.ofString())
@@ -151,12 +147,14 @@ class TelegramBotService(private val botToken: String) {
         hasSpoiler: Boolean = false,
         caption: String? = null,
         replyMarkup: ReplyMarkup? = null,
+        parseMode: String? = null,
     ): String {
         val data: MutableMap<String, Any> = LinkedHashMap()
         data["chat_id"] = chatId.toString()
         data["photo"] = file
         data["has_spoiler"] = hasSpoiler
         caption?.let { data["caption"] = it }
+        parseMode?.let { data["parse_mode"] = it }
         replyMarkup?.let { data["reply_markup"] = json.encodeToString(ReplyMarkup.serializer(), it) }
         val boundary = BigInteger(35, Random()).toString(36)
         val request = HttpRequest.newBuilder()
@@ -242,6 +240,7 @@ class TelegramBotService(private val botToken: String) {
                     listOf(InlineKeyboard(text = "Учить слова \uD83D\uDCDA", callbackData = LEARN_WORDS_CALLBACK)),
                     listOf(InlineKeyboard(text = "Статистика \uD83D\uDCCA", callbackData = STATISTICS_CALLBACK)),
                     listOf(InlineKeyboard(text = "Сбросить прогресc \uD83E\uDDE9", callbackData = RESET_PROGRESS_CALLBACK)),
+                    listOf(InlineKeyboard(text = "Очистить словарь \uD83D\uDDD1\uFE0F", callbackData = CLEAR_DICTIONARY_CALLBACK)),
                     listOf(InlineKeyboard(text = "Сделать паузу ☕\uFE0F", callbackData = EXIT_BUTTON))
                 )
             )
@@ -326,10 +325,19 @@ class TelegramBotService(private val botToken: String) {
     }
 
     fun checkNextQuestionAndSend(trainer: LearnWordsTrainer?, chatId: Long, imageDir: File, json: Json) {
+        var totalCount = trainer?.getStatistics()?.totalCount ?: 0
+        if (totalCount == 0) {
+            val defaultDict = File(DEFAULT_DICTIONARY_FILE)
+            if (defaultDict.exists() && defaultDict.isFile) {
+                trainer?.addWordsFromFile(defaultDict.absolutePath)
+                totalCount = trainer?.getStatistics()?.totalCount ?: 0
+            }
+        }
         val nextQuestion = trainer?.getNextQuestion()
-        if (nextQuestion == null) {
-            sendMessage(chatId, ALL_WORDS_ARE_LEARNED)
-        } else {
+        when {
+            totalCount == 0 -> sendMessage(chatId, DICTIONARY_EMPTY, "HTML")
+            nextQuestion == null -> sendMessage(chatId, ALL_WORDS_ARE_LEARNED)
+            else -> {
             val questionText = "\uD83C\uDDEC\uD83C\uDDE7 ${nextQuestion.correctAnswer.word}\n\nВыбери правильный ответ:"
             val replyMarkup = ReplyMarkup(
                 nextQuestion.questionWords.mapIndexed { index, word ->
@@ -358,6 +366,7 @@ class TelegramBotService(private val botToken: String) {
                 }
             } else {
                 sendQuestion(chatId, nextQuestion)
+            }
             }
         }
     }

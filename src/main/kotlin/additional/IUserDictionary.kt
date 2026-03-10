@@ -8,6 +8,7 @@ interface IUserDictionary {
     fun getAllWords(): List<Word>
     fun setCorrectAnswersCount(word: String, correctAnswersCount: Int)
     fun resetUserProgress()
+    fun clearDictionary()
     fun addWordsFromFile(filePath: String)
     fun getCorrectAnswersCount(word: String): Int
     fun updateWordFileId(word: String, fileId: String)

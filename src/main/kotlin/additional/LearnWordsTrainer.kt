@@ -73,6 +73,10 @@ class LearnWordsTrainer private constructor(
         userDictionary.resetUserProgress()
     }
 
+    fun clearDictionary() {
+        userDictionary.clearDictionary()
+    }
+
     fun save() {
         question?.correctAnswer?.fileId?.let { fileId ->
             userDictionary.updateWordFileId(question!!.correctAnswer.word, fileId)
