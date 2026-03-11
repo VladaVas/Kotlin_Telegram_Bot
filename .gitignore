@@ -57,3 +57,6 @@ logs/
 *.env.*
 local.properties
 *.local.properties
+
+# Database
+data.db

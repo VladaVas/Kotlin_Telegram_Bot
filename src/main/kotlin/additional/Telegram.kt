@@ -19,8 +19,6 @@ fun main(args: Array<String>) {
     while (true) {
         Thread.sleep(2000)
         val responseString: String = botService.getUpdates(lastUpdateId)
-        println(responseString)
-
         val response: Response = json.decodeFromString(responseString)
         val updates = response.result
 
@@ -31,30 +29,38 @@ fun main(args: Array<String>) {
             val message = update.message?.text
             val chatIdString = update.message?.chat?.id ?: update.callbackQuery?.message?.chat?.id
 
-            if (message != null) println(message)
-
             val document = update.message?.document
             if (chatIdString != null && document != null) {
                 val trainer = trainers.getOrPut(chatIdString) { LearnWordsTrainer(chatIdString) }
                 val jsonResponse = botService.getFile(document.fileId, json)
-                println(jsonResponse)
                 val getFileResponse: GetFileResponse = json.decodeFromString(jsonResponse)
                 getFileResponse.result?.let { telegramFile ->
-                    val localFileName = "word_upload_$chatIdString.txt"
-                    botService.sendMessage(chatIdString, "Обработка файла... 0%\n[▒▒▒▒▒▒▒▒▒▒]")
-                    val progressMessageId = botService.getLastMessageId(chatIdString)
-                    if (progressMessageId != null) {
-                        botService.updateProgress(chatIdString, progressMessageId, 50)
+                    val tempFile = File.createTempFile("word_upload_${chatIdString}_", ".txt")
+                    try {
+                        botService.sendMessage(chatIdString, "Обработка файла... 0%\n[▒▒▒▒▒▒▒▒▒▒]")
+                        val progressMessageId = botService.getLastMessageId(chatIdString)
+                        if (progressMessageId != null) {
+                            botService.updateProgress(chatIdString, progressMessageId, 50)
+                        }
+                        val hadNoWords = trainer.getStatistics().totalCount == 0
+                        if (hadNoWords) {
+                            val defaultDict = File(DEFAULT_DICTIONARY_FILE)
+                            if (defaultDict.exists() && defaultDict.isFile) {
+                                trainer.addWordsFromFile(defaultDict.absolutePath)
+                            }
+                        }
+                        botService.downloadFile(telegramFile.filePath, tempFile.absolutePath)
+                        trainer.addWordsFromFile(tempFile.absolutePath)
+                        if (progressMessageId != null) {
+                            botService.updateProgress(chatIdString, progressMessageId, 100)
+                            botService.editMessage(chatIdString, progressMessageId, "Словарь обновлён! \uD83C\uDD95\nДобавлены слова из файла \"${document.fileName}\".")
+                        } else {
+                            botService.sendMessage(chatIdString, "Словарь обновлён: добавлены слова из файла \"${document.fileName}\".")
+                        }
+                        botService.sendMenu(chatIdString)
+                    } finally {
+                        tempFile.delete()
                     }
-                    botService.downloadFile(telegramFile.filePath, localFileName)
-                    trainer.addWordsFromFile(localFileName)
-                    if (progressMessageId != null) {
-                        botService.updateProgress(chatIdString, progressMessageId, 100)
-                        botService.editMessage(chatIdString, progressMessageId, "Словарь обновлён: добавлены слова из файла ${document.fileName}.")
-                    } else {
-                        botService.sendMessage(chatIdString, "Словарь обновлён: добавлены слова из файла ${document.fileName}.")
-                    }
-                    botService.sendMenu(chatIdString)
                 }
             }
 
@@ -70,10 +76,11 @@ fun main(args: Array<String>) {
                 trainers.getOrPut(chatIdString) { LearnWordsTrainer(chatIdString) }
                 val startImage = File(imageDir, START_IMAGE_FILENAME)
                 if (startImage.exists() && startImage.isFile) {
-                    botService.sendPhoto(startImage, chatIdString, caption = HELLO_TEXT)
+                    botService.sendPhoto(startImage, chatIdString, caption = HELLO_TEXT, parseMode = "HTML")
                 } else {
-                    botService.sendMessage(chatIdString, HELLO_TEXT)
+                    botService.sendMessage(chatIdString, HELLO_TEXT, "HTML")
                 }
+                botService.sendMessage(chatIdString, LEARNED_WORD_RULE_TEXT, "HTML")
                 botService.sendMenu(chatIdString)
             }
             val callBackQueryData = update.callbackQuery?.data
@@ -106,6 +113,16 @@ fun main(args: Array<String>) {
                     RESET_PROGRESS_CALLBACK -> {
                         trainer.resetProgress()
                         botService.sendMessage(callbackChatId, RESET_PROGRESS_TEXT)
+                        botService.sendMenu(callbackChatId)
+                    }
+
+                    CLEAR_DICTIONARY_CALLBACK -> {
+                        trainer.clearDictionary()
+                        val defaultDict = File(DEFAULT_DICTIONARY_FILE)
+                        if (defaultDict.exists() && defaultDict.isFile) {
+                            trainer.addWordsFromFile(defaultDict.absolutePath)
+                        }
+                        botService.sendMessage(callbackChatId, CLEAR_DICTIONARY_TEXT)
                         botService.sendMenu(callbackChatId)
                     }
 
