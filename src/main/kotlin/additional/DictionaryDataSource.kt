@@ -38,14 +38,11 @@ private val CREATE_USER_ANSWERS_TABLE = """
 
 fun createWordsTable() {
     DriverManager.getConnection(DB_URL).use { connection ->
-        connection.createStatement().use { statement ->
-            statement.queryTimeout = 30
-            statement.executeUpdate(CREATE_WORDS_TABLE)
-            statement.executeUpdate(CREATE_USERS_TABLE)
-            statement.executeUpdate(CREATE_USER_ANSWERS_TABLE)
+        connection.prepareStatement(CREATE_WORDS_TABLE).execute()
+        connection.prepareStatement(CREATE_USERS_TABLE).execute()
+        connection.prepareStatement(CREATE_USER_ANSWERS_TABLE).execute()
         }
     }
-}
 
 fun updateDictionary(wordsFile: File): Int {
     if (!wordsFile.exists()) return 0

@@ -26,8 +26,16 @@ fun main(args: Array<String>) {
             val updateId = update.updateId
             lastUpdateId = updateId + 1
 
-            val message = update.message?.text
             val chatIdString = update.message?.chat?.id ?: update.callbackQuery?.message?.chat?.id
+
+            val message = update.message?.text?.let { raw ->
+                try {
+                    InputValidator.validateUserText(raw)
+                } catch (e: IllegalArgumentException) {
+                    SecurityLogger.logSuspiciousActivity("invalid message from chatId=$chatIdString", raw)
+                    null
+                }
+            }
 
             val document = update.message?.document
             if (chatIdString != null && document != null) {
@@ -83,8 +91,15 @@ fun main(args: Array<String>) {
                 botService.sendMessage(chatIdString, LEARNED_WORD_RULE_TEXT, "HTML")
                 botService.sendMenu(chatIdString)
             }
-            val callBackQueryData = update.callbackQuery?.data
             val callbackChatId = update.callbackQuery?.message?.chat?.id
+            val callBackQueryData = update.callbackQuery?.data?.let { raw ->
+                try {
+                    InputValidator.validateCallbackData(raw)
+                } catch (e: IllegalArgumentException) {
+                    SecurityLogger.logSuspiciousActivity("invalid callback from chatId=$callbackChatId", raw)
+                    null
+                }
+            }
 
             if (callbackChatId != null) {
                 val trainer = trainers.getOrPut(callbackChatId) { LearnWordsTrainer(callbackChatId) }
