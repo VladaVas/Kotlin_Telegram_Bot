@@ -5,7 +5,10 @@ import java.io.File
 
 fun main(args: Array<String>) {
 
-    val botToken = args[0]
+    val botToken = System.getenv("TELEGRAM_BOT_TOKEN") ?: args.getOrNull(0)
+        ?: throw IllegalStateException(
+            "Telegram bot token is not provided. Set TELEGRAM_BOT_TOKEN env var or pass it as the first program argument."
+        )
     var lastUpdateId = 0L
     val botService = TelegramBotService(botToken)
     val dynamicMessage = DynamicMessage(botService)

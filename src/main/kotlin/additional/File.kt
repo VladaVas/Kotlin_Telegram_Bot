@@ -9,7 +9,11 @@ fun Question.asConsoleString() {
         }
 }
 
-fun main() {
+/**
+ * Локальное консольное приложение для отладки тренажёра.
+ * Не является основной точкой входа Telegram-бота.
+ */
+fun debugTrainerCli() {
     val trainer = try {
         LearnWordsTrainer()
     } catch (e: Exception) {

@@ -47,10 +47,13 @@ const val RESET_PROGRESS_CALLBACK = "reset_progress"
 const val RESET_PROGRESS_TEXT = "Прогресс изучения слов сброшен ✅"
 const val CLEAR_DICTIONARY_CALLBACK = "clear_dictionary"
 const val CLEAR_DICTIONARY_TEXT = "Словарь очищен и все слова удалены \uD83E\uDDF9\nМожешь загрузить новый файл со словами."
-const val DEFAULT_DICTIONARY_FILE = "word.txt"
+val DEFAULT_DICTIONARY_FILE: String =
+    System.getenv("DEFAULT_DICTIONARY_FILE") ?: "word.txt"
 const val WORD_MARK_LEARNED_PREFIX = "word_mark_learned|"
 const val WORD_RESET_PREFIX = "word_reset|"
-const val IMAGES_FOLDER = "images"
+val IMAGES_FOLDER: String =
+    System.getenv("IMAGES_FOLDER") ?: "images"
 val IMAGE_EXTENSIONS = listOf("jpg", "jpeg", "png", "gif", "webp")
 const val DICTIONARY_SEPARATOR = "|"
-const val DB_URL = "jdbc:sqlite:data.db"
+val DB_URL: String =
+    System.getenv("DB_URL") ?: "jdbc:sqlite:data.db"

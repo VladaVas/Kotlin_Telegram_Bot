@@ -68,10 +68,14 @@ fun updateDictionary(wordsFile: File): Int {
     return inserted
 }
 
-fun main() {
+/**
+ * Вспомогательная утилита для локального наполнения словаря.
+ * Не является основной точкой входа приложения.
+ */
+fun updateDictionaryCli() {
     try {
         createWordsTable()
-        val count = updateDictionary(File("word.txt"))
+        val count = updateDictionary(File(DEFAULT_DICTIONARY_FILE))
         println("Импортировано слов: $count")
     } catch (e: SQLException) {
         e.printStackTrace(System.err)
