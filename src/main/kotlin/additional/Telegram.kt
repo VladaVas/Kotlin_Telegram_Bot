@@ -119,7 +119,12 @@ fun main(args: Array<String>) {
                     if (chatIdString != null && message?.startsWith(START_BUTTON) == true) {
                         val startImage = File(imageDir, START_IMAGE_FILENAME)
                         if (startImage.exists() && startImage.isFile) {
-                            botService.sendPhoto(startImage, chatIdString, caption = HELLO_TEXT, parseMode = "HTML")
+                            try {
+                                botService.sendPhoto(startImage, chatIdString, caption = HELLO_TEXT, parseMode = "HTML")
+                            } catch (e: Exception) {
+                                System.err.println("Failed to send start photo for chatId=$chatIdString: ${e.message}. Fallback to text.")
+                                botService.sendMessage(chatIdString, HELLO_TEXT, "HTML")
+                            }
                         } else {
                             botService.sendMessage(chatIdString, HELLO_TEXT, "HTML")
                         }
@@ -177,7 +182,12 @@ fun main(args: Array<String>) {
                             EXIT_BUTTON -> {
                                 val pauseImage = File(imageDir, PAUSE_IMAGE_FILENAME)
                                 if (pauseImage.exists() && pauseImage.isFile) {
-                                    botService.sendPhoto(pauseImage, callbackChatId, caption = EXIT_TEXT)
+                                    try {
+                                        botService.sendPhoto(pauseImage, callbackChatId, caption = EXIT_TEXT)
+                                    } catch (e: Exception) {
+                                        System.err.println("Failed to send pause photo for chatId=$callbackChatId: ${e.message}. Fallback to text.")
+                                        botService.sendMessage(callbackChatId, EXIT_TEXT)
+                                    }
                                 } else {
                                     botService.sendMessage(callbackChatId, EXIT_TEXT)
                                 }

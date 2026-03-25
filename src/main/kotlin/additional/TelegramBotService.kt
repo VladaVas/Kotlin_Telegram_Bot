@@ -422,23 +422,28 @@ class TelegramBotService(private val botToken: String) {
                 val imageFile = findImageFile(nextQuestion.correctAnswer, imageDir)
 
                 if (imageFile != null) {
-                    val cachedFileId = nextQuestion.correctAnswer.fileId
-                    if (cachedFileId != null) {
-                        sendPhotoByFileIdWithCaptionAndKeyboard(chatId, cachedFileId, questionText, replyMarkup, true)
-                    } else {
-                        val responseBody = sendPhoto(
-                            imageFile,
-                            chatId,
-                            hasSpoiler = true,
-                            caption = questionText,
-                            replyMarkup = replyMarkup
-                        )
-                        val sendPhotoResponse = json.decodeFromString<SendPhotoResponse>(responseBody)
-                        val fileId = sendPhotoResponse.result?.photo?.maxByOrNull { it.fileSize }?.fileId
-                        if (fileId != null) {
-                            nextQuestion.correctAnswer.fileId = fileId
-                            trainer.save()
+                    try {
+                        val cachedFileId = nextQuestion.correctAnswer.fileId
+                        if (cachedFileId != null) {
+                            sendPhotoByFileIdWithCaptionAndKeyboard(chatId, cachedFileId, questionText, replyMarkup, true)
+                        } else {
+                            val responseBody = sendPhoto(
+                                imageFile,
+                                chatId,
+                                hasSpoiler = true,
+                                caption = questionText,
+                                replyMarkup = replyMarkup
+                            )
+                            val sendPhotoResponse = json.decodeFromString<SendPhotoResponse>(responseBody)
+                            val fileId = sendPhotoResponse.result?.photo?.maxByOrNull { it.fileSize }?.fileId
+                            if (fileId != null) {
+                                nextQuestion.correctAnswer.fileId = fileId
+                                trainer.save()
+                            }
                         }
+                    } catch (e: Exception) {
+                        System.err.println("Failed to send question photo for chatId=$chatId. Fallback to text. Error: ${e.message}")
+                        sendQuestion(chatId, nextQuestion)
                     }
                 } else {
                     sendQuestion(chatId, nextQuestion)
