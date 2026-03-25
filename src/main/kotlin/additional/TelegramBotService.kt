@@ -13,6 +13,7 @@ import java.net.http.HttpRequest
 import java.net.http.HttpResponse
 import java.nio.charset.StandardCharsets
 import java.nio.file.Files
+import java.time.Duration
 import java.util.Random
 
 class TelegramBotService(private val botToken: String) {
@@ -22,13 +23,28 @@ class TelegramBotService(private val botToken: String) {
 
     fun getLastMessageId(chatId: Long): Long? = lastMessageIds[chatId]
 
-    fun getUpdates(updateId: Long): String {
-        val urlGetUpdates = "$TELEGRAM_BASE_URL$botToken/getUpdates?offset=$updateId"
-        val request: HttpRequest = HttpRequest.newBuilder().uri(URI.create(urlGetUpdates)).build()
-        val response: HttpResponse<String> =
-            client.send(request, HttpResponse.BodyHandlers.ofString())
+    fun getUpdates(updateId: Long): String? {
+        val url = "$TELEGRAM_BASE_URL$botToken/getUpdates?offset=$updateId"
 
-        return response.body()
+        return try {
+            val request = HttpRequest.newBuilder()
+                .uri(URI.create(url))
+                .timeout(Duration.ofSeconds(60))
+                .GET()
+                .build()
+
+            val response = client.send(request, HttpResponse.BodyHandlers.ofString())
+
+            if (response.statusCode() != 200) {
+                println("HTTP error: ${response.statusCode()}")
+                return null
+            }
+
+            response.body()
+        } catch (e: Exception) {
+            println("Network error: ${e.message}")
+            null
+        }
     }
 
     fun getFile(fileId: String, json: Json): String {
@@ -70,7 +86,8 @@ class TelegramBotService(private val botToken: String) {
 
     fun editMessage(chatId: Long, messageId: Long, message: String): String {
         val encodedText = URLEncoder.encode(message, "utf-8")
-        val urlEditMessage = "$TELEGRAM_BASE_URL$botToken/editMessageText?chat_id=$chatId&message_id=$messageId&text=$encodedText"
+        val urlEditMessage =
+            "$TELEGRAM_BASE_URL$botToken/editMessageText?chat_id=$chatId&message_id=$messageId&text=$encodedText"
         val request: HttpRequest = HttpRequest.newBuilder().uri(URI.create(urlEditMessage)).build()
         val response: HttpResponse<String> =
             client.send(request, HttpResponse.BodyHandlers.ofString())
@@ -141,7 +158,8 @@ class TelegramBotService(private val botToken: String) {
         return when {
             desc.contains("message is not modified", ignoreCase = true) -> true
             desc.contains("message to edit not found", ignoreCase = true) ||
-                desc.contains("MESSAGE_EDIT_TIME_EXPIRED", ignoreCase = true) -> false
+                    desc.contains("MESSAGE_EDIT_TIME_EXPIRED", ignoreCase = true) -> false
+
             else -> false
         }
     }
@@ -185,7 +203,12 @@ class TelegramBotService(private val botToken: String) {
         hasSpoiler: Boolean,
     ): String {
         val replyMarkupJson = json.encodeToString(ReplyMarkup.serializer(), replyMarkup)
-        val body = "chat_id=$chatId&photo=${URLEncoder.encode(fileId, "UTF-8")}&caption=${URLEncoder.encode(caption, "UTF-8")}&has_spoiler=$hasSpoiler&reply_markup=${URLEncoder.encode(replyMarkupJson, "UTF-8")}"
+        val body = "chat_id=$chatId&photo=${URLEncoder.encode(fileId, "UTF-8")}&caption=${
+            URLEncoder.encode(
+                caption,
+                "UTF-8"
+            )
+        }&has_spoiler=$hasSpoiler&reply_markup=${URLEncoder.encode(replyMarkupJson, "UTF-8")}"
         val request = HttpRequest.newBuilder()
             .uri(URI.create("$TELEGRAM_BASE_URL$botToken/sendPhoto"))
             .header("Content-Type", "application/x-www-form-urlencoded")
@@ -195,7 +218,14 @@ class TelegramBotService(private val botToken: String) {
         val responseBody = response.body()
         val parsed = runCatching { json.decodeFromString<SendPhotoResponse>(responseBody) }.getOrNull()
         when {
-            parsed == null -> System.err.println("sendPhoto(fileId) parse error for chat $chatId: ${responseBody.take(300)}")
+            parsed == null -> System.err.println(
+                "sendPhoto(fileId) parse error for chat $chatId: ${
+                    responseBody.take(
+                        300
+                    )
+                }"
+            )
+
             !parsed.ok -> System.err.println("sendPhoto(fileId) failed for chat $chatId: ${parsed.description ?: "unknown error"}")
             else -> parsed.result?.messageId?.let { lastMessageIds[chatId] = it }
         }
@@ -215,7 +245,10 @@ class TelegramBotService(private val botToken: String) {
         return null
     }
 
-    private fun HttpRequest.Builder.postMultipartFormData(boundary: String, data: Map<String, Any>): HttpRequest.Builder {
+    private fun HttpRequest.Builder.postMultipartFormData(
+        boundary: String,
+        data: Map<String, Any>
+    ): HttpRequest.Builder {
         val byteArrays = ArrayList<ByteArray>()
         val separator = "--$boundary\r\nContent-Disposition: form-data; name=".toByteArray(StandardCharsets.UTF_8)
 
@@ -234,6 +267,7 @@ class TelegramBotService(private val botToken: String) {
                     byteArrays.add(Files.readAllBytes(path))
                     byteArrays.add("\r\n".toByteArray(StandardCharsets.UTF_8))
                 }
+
                 else -> byteArrays.add("\"${entry.key}\"\r\n\r\n${entry.value}\r\n".toByteArray(StandardCharsets.UTF_8))
             }
         }
@@ -254,8 +288,18 @@ class TelegramBotService(private val botToken: String) {
                 listOf(
                     listOf(InlineKeyboard(text = "Учить слова \uD83D\uDCDA", callbackData = LEARN_WORDS_CALLBACK)),
                     listOf(InlineKeyboard(text = "Статистика \uD83D\uDCCA", callbackData = STATISTICS_CALLBACK)),
-                    listOf(InlineKeyboard(text = "Сбросить прогресc \uD83E\uDDE9", callbackData = RESET_PROGRESS_CALLBACK)),
-                    listOf(InlineKeyboard(text = "Очистить словарь \uD83D\uDDD1\uFE0F", callbackData = CLEAR_DICTIONARY_CALLBACK)),
+                    listOf(
+                        InlineKeyboard(
+                            text = "Сбросить прогресc \uD83E\uDDE9",
+                            callbackData = RESET_PROGRESS_CALLBACK
+                        )
+                    ),
+                    listOf(
+                        InlineKeyboard(
+                            text = "Очистить словарь \uD83D\uDDD1\uFE0F",
+                            callbackData = CLEAR_DICTIONARY_CALLBACK
+                        )
+                    ),
                     listOf(InlineKeyboard(text = "Сделать паузу ☕\uFE0F", callbackData = EXIT_BUTTON))
                 )
             )
@@ -363,35 +407,42 @@ class TelegramBotService(private val botToken: String) {
             totalCount == 0 -> sendMessage(chatId, DICTIONARY_EMPTY, "HTML")
             nextQuestion == null -> sendMessage(chatId, ALL_WORDS_ARE_LEARNED)
             else -> {
-            val questionText = "\uD83C\uDDEC\uD83C\uDDE7 ${nextQuestion.correctAnswer.word}\n\nВыбери правильный ответ:"
-            val replyMarkup = ReplyMarkup(
-                nextQuestion.questionWords.mapIndexed { index, word ->
-                    listOf(
-                        InlineKeyboard(
-                            text = word.translation,
-                            callbackData = "$CALLBACK_DATA_ANSWER_PREFIX$index"
+                val questionText =
+                    "\uD83C\uDDEC\uD83C\uDDE7 ${nextQuestion.correctAnswer.word}\n\nВыбери правильный ответ:"
+                val replyMarkup = ReplyMarkup(
+                    nextQuestion.questionWords.mapIndexed { index, word ->
+                        listOf(
+                            InlineKeyboard(
+                                text = word.translation,
+                                callbackData = "$CALLBACK_DATA_ANSWER_PREFIX$index"
+                            )
                         )
-                    )
-                } + listOf(listOf(InlineKeyboard(MENU_BUTTON, MENU_BUTTON_TEXT)))
-            )
-            val imageFile = findImageFile(nextQuestion.correctAnswer, imageDir)
+                    } + listOf(listOf(InlineKeyboard(MENU_BUTTON, MENU_BUTTON_TEXT)))
+                )
+                val imageFile = findImageFile(nextQuestion.correctAnswer, imageDir)
 
-            if (imageFile != null) {
-                val cachedFileId = nextQuestion.correctAnswer.fileId
-                if (cachedFileId != null) {
-                    sendPhotoByFileIdWithCaptionAndKeyboard(chatId, cachedFileId, questionText, replyMarkup, true)
-                } else {
-                    val responseBody = sendPhoto(imageFile, chatId, hasSpoiler = true, caption = questionText, replyMarkup = replyMarkup)
-                    val sendPhotoResponse = json.decodeFromString<SendPhotoResponse>(responseBody)
-                    val fileId = sendPhotoResponse.result?.photo?.maxByOrNull { it.fileSize }?.fileId
-                    if (fileId != null) {
-                        nextQuestion.correctAnswer.fileId = fileId
-                        trainer.save()
+                if (imageFile != null) {
+                    val cachedFileId = nextQuestion.correctAnswer.fileId
+                    if (cachedFileId != null) {
+                        sendPhotoByFileIdWithCaptionAndKeyboard(chatId, cachedFileId, questionText, replyMarkup, true)
+                    } else {
+                        val responseBody = sendPhoto(
+                            imageFile,
+                            chatId,
+                            hasSpoiler = true,
+                            caption = questionText,
+                            replyMarkup = replyMarkup
+                        )
+                        val sendPhotoResponse = json.decodeFromString<SendPhotoResponse>(responseBody)
+                        val fileId = sendPhotoResponse.result?.photo?.maxByOrNull { it.fileSize }?.fileId
+                        if (fileId != null) {
+                            nextQuestion.correctAnswer.fileId = fileId
+                            trainer.save()
+                        }
                     }
+                } else {
+                    sendQuestion(chatId, nextQuestion)
                 }
-            } else {
-                sendQuestion(chatId, nextQuestion)
-            }
             }
         }
     }
@@ -425,7 +476,10 @@ class TelegramBotService(private val botToken: String) {
             }
         } else {
             if (userAnswerIndex != null && isCorrect) sendMessage(chatId, CORRECT_ANSWER)
-            else sendMessage(chatId, "Неправильно! \uD83E\uDEE2\n${correctWord?.word} – это ${correctWord?.translation}")
+            else sendMessage(
+                chatId,
+                "Неправильно! \uD83E\uDEE2\n${correctWord?.word} – это ${correctWord?.translation}"
+            )
         }
     }
 }
