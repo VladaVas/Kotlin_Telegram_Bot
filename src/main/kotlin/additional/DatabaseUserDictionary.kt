@@ -178,11 +178,20 @@ class DatabaseUserDictionary(
     private fun ensureUserExists() {
         safeDbCall(Unit) {
             DriverManager.getConnection(DB_URL).use { connection ->
+                val existed = connection.prepareStatement(
+                    "SELECT 1 FROM users WHERE chat_id = ? LIMIT 1"
+                ).use { checkStmt ->
+                    checkStmt.setLong(1, userId)
+                    checkStmt.executeQuery().next()
+                }
                 connection.prepareStatement(
                     "INSERT OR IGNORE INTO users (chat_id) VALUES (?)"
                 ).use { stmt ->
                     stmt.setLong(1, userId)
                     stmt.executeUpdate()
+                }
+                if (!existed) {
+                    println("User saved to DB: chat_id=$userId")
                 }
             }
         }

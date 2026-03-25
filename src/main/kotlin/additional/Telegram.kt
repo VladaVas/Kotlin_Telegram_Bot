@@ -50,6 +50,10 @@ fun main(args: Array<String>) {
                     lastUpdateId = updateId + 1
 
                     val chatIdString = update.message?.chat?.id ?: update.callbackQuery?.message?.chat?.id
+                    if (chatIdString != null) {
+                        // Force user initialization in DB for any interaction type.
+                        trainers.getOrPut(chatIdString) { LearnWordsTrainer(chatIdString) }
+                    }
                     val message = update.message?.text?.let { raw ->
                         try {
                             InputValidator.validateUserText(raw)
@@ -113,7 +117,6 @@ fun main(args: Array<String>) {
                     }
 
                     if (chatIdString != null && message?.startsWith(START_BUTTON) == true) {
-                        trainers.getOrPut(chatIdString) { LearnWordsTrainer(chatIdString) }
                         val startImage = File(imageDir, START_IMAGE_FILENAME)
                         if (startImage.exists() && startImage.isFile) {
                             botService.sendPhoto(startImage, chatIdString, caption = HELLO_TEXT, parseMode = "HTML")

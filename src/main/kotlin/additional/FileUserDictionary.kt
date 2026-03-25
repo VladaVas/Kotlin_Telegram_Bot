@@ -12,8 +12,10 @@ class FileUserDictionary(
 
     private val dictionary: MutableList<Word> = try {
         loadDictionary().toMutableList()
+    } catch (e: IllegalStateException) {
+        throw e
     } catch (e: Exception) {
-        throw IllegalArgumentException("Некорректный файл")
+        throw IllegalArgumentException("Некорректный файл", e)
     }
 
     override fun getNumOfLearnedWords(): Int =
