@@ -36,7 +36,7 @@ fun main(args: Array<String>) {
     while (true) {
         try {
             Thread.sleep(2000)
-            val responseString: String = botService.getUpdates(lastUpdateId)
+            val responseString: String = botService.getUpdates(lastUpdateId) ?: continue
             val response: Response = json.decodeFromString(responseString)
             if (!response.ok) {
                 System.err.println("Telegram getUpdates failed: ${response.description ?: "unknown error"}")
