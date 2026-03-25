@@ -3,7 +3,7 @@ package org.example.additional
 object InputValidator {
     private const val MAX_TEXT_LENGTH = 1000
     private const val MAX_CALLBACK_LENGTH = 256
-    private val allowedTextPattern = Regex("^[a-zA-Zа-яА-Я0-9\\s\\-.,:;!?()\"'`«»]+$")
+    private val allowedTextPattern = Regex("^[^\\p{Cntrl}]{1,1000}$")
     private val allowedCallbackPattern = Regex("^[a-zA-Z0-9_\\-|]+$")
 
     fun validateUserText(name: String): String {

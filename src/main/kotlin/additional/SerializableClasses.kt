@@ -15,8 +15,12 @@ data class Update(
 
 @Serializable
 data class Response(
+    @SerialName("ok")
+    val ok: Boolean = false,
+    @SerialName("description")
+    val description: String? = null,
     @SerialName("result")
-    val result: List<Update>,
+    val result: List<Update> = emptyList(),
 )
 
 @Serializable
@@ -127,6 +131,8 @@ data class SendMessageResult(
 data class SendMessageResponse(
     @SerialName("ok")
     val ok: Boolean,
+    @SerialName("description")
+    val description: String? = null,
     @SerialName("result")
     val result: SendMessageResult? = null,
 )
@@ -151,6 +157,8 @@ data class SendPhotoResult(
 data class SendPhotoResponse(
     @SerialName("ok")
     val ok: Boolean,
+    @SerialName("description")
+    val description: String? = null,
     @SerialName("result")
     val result: SendPhotoResult? = null,
 )

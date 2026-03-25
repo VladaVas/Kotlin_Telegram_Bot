@@ -42,9 +42,9 @@ class TelegramBotService(private val botToken: String) {
     }
 
     fun downloadFile(filePath: String, fileName: String) {
-        val encodedPath = filePath.split("/").map { segment ->
+        val encodedPath = filePath.split("/").joinToString("/") { segment ->
             URLEncoder.encode(segment, StandardCharsets.UTF_8).replace("+", "%20")
-        }.joinToString("/")
+        }
         val request = HttpRequest.newBuilder().uri(URI.create("$BOT_FILE_URL$botToken/$encodedPath")).GET().build()
         client.send(request, HttpResponse.BodyHandlers.ofInputStream()).body().use { input ->
             File(fileName).outputStream().use { output -> input.copyTo(output, 16 * 1024) }
@@ -59,7 +59,12 @@ class TelegramBotService(private val botToken: String) {
         val response: HttpResponse<String> =
             client.send(request, HttpResponse.BodyHandlers.ofString())
         val body = response.body()
-        json.decodeFromString<SendMessageResponse>(body).result?.messageId?.let { lastMessageIds[chatId] = it }
+        val parsed = runCatching { json.decodeFromString<SendMessageResponse>(body) }.getOrNull()
+        when {
+            parsed == null -> System.err.println("sendMessage parse error for chat $chatId: ${body.take(300)}")
+            !parsed.ok -> System.err.println("sendMessage failed for chat $chatId: ${parsed.description ?: "unknown error"}")
+            else -> parsed.result?.messageId?.let { lastMessageIds[chatId] = it }
+        }
         return body
     }
 
@@ -163,7 +168,12 @@ class TelegramBotService(private val botToken: String) {
             .build()
         val response = client.send(request, HttpResponse.BodyHandlers.ofString())
         val body = response.body()
-        json.decodeFromString<SendPhotoResponse>(body).result?.messageId?.let { lastMessageIds[chatId] = it }
+        val parsed = runCatching { json.decodeFromString<SendPhotoResponse>(body) }.getOrNull()
+        when {
+            parsed == null -> System.err.println("sendPhoto parse error for chat $chatId: ${body.take(300)}")
+            !parsed.ok -> System.err.println("sendPhoto failed for chat $chatId: ${parsed.description ?: "unknown error"}")
+            else -> parsed.result?.messageId?.let { lastMessageIds[chatId] = it }
+        }
         return body
     }
 
@@ -183,7 +193,12 @@ class TelegramBotService(private val botToken: String) {
             .build()
         val response = client.send(request, HttpResponse.BodyHandlers.ofString())
         val responseBody = response.body()
-        json.decodeFromString<SendPhotoResponse>(responseBody).result?.messageId?.let { lastMessageIds[chatId] = it }
+        val parsed = runCatching { json.decodeFromString<SendPhotoResponse>(responseBody) }.getOrNull()
+        when {
+            parsed == null -> System.err.println("sendPhoto(fileId) parse error for chat $chatId: ${responseBody.take(300)}")
+            !parsed.ok -> System.err.println("sendPhoto(fileId) failed for chat $chatId: ${parsed.description ?: "unknown error"}")
+            else -> parsed.result?.messageId?.let { lastMessageIds[chatId] = it }
+        }
         return responseBody
     }
 
@@ -255,7 +270,12 @@ class TelegramBotService(private val botToken: String) {
         val response: HttpResponse<String> =
             client.send(request, HttpResponse.BodyHandlers.ofString())
         val body = response.body()
-        chatId?.let { id -> json.decodeFromString<SendMessageResponse>(body).result?.messageId?.let { lastMessageIds[id] = it } }
+        val parsed = runCatching { json.decodeFromString<SendMessageResponse>(body) }.getOrNull()
+        when {
+            parsed == null -> System.err.println("sendMenu parse error for chat $chatId: ${body.take(300)}")
+            !parsed.ok -> System.err.println("sendMenu failed for chat $chatId: ${parsed.description ?: "unknown error"}")
+            else -> chatId?.let { id -> parsed.result?.messageId?.let { lastMessageIds[id] = it } }
+        }
         return body
     }
 
@@ -290,7 +310,12 @@ class TelegramBotService(private val botToken: String) {
         val response: HttpResponse<String> =
             client.send(request, HttpResponse.BodyHandlers.ofString())
         val body = response.body()
-        json.decodeFromString<SendMessageResponse>(body).result?.messageId?.let { lastMessageIds[chatId] = it }
+        val parsed = runCatching { json.decodeFromString<SendMessageResponse>(body) }.getOrNull()
+        when {
+            parsed == null -> System.err.println("sendQuestion parse error for chat $chatId: ${body.take(300)}")
+            !parsed.ok -> System.err.println("sendQuestion failed for chat $chatId: ${parsed.description ?: "unknown error"}")
+            else -> parsed.result?.messageId?.let { lastMessageIds[chatId] = it }
+        }
         return body
     }
 

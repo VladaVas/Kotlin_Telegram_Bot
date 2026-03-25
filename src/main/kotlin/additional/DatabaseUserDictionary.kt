@@ -18,12 +18,11 @@ class DatabaseUserDictionary(
         } catch (e: Exception) {
             println("INIT ERROR:")
             e.printStackTrace()
-            throw e
         }
     }
 
     override fun getNumOfLearnedWords(): Int =
-        safeDbCall {
+        safeDbCall(0) {
             queryInt(
                 "SELECT COUNT(*) FROM words WHERE user_id = ? AND correct_answers_count >= ?",
                 userId, learningThreshold
@@ -31,12 +30,12 @@ class DatabaseUserDictionary(
         }
 
     override fun getSize(): Int =
-        safeDbCall {
+        safeDbCall(0) {
             queryInt("SELECT COUNT(*) FROM words WHERE user_id = ?", userId)
         }
 
     override fun getLearnedWords(): List<Word> =
-        safeDbCall {
+        safeDbCall(emptyList()) {
             queryWords(
                 "SELECT text, translate, correct_answers_count, file_id FROM words WHERE user_id = ? AND correct_answers_count >= ?",
                 userId, learningThreshold
@@ -44,7 +43,7 @@ class DatabaseUserDictionary(
         }
 
     override fun getUnlearnedWords(): List<Word> =
-        safeDbCall {
+        safeDbCall(emptyList()) {
             queryWords(
                 "SELECT text, translate, correct_answers_count, file_id FROM words WHERE user_id = ? AND correct_answers_count < ?",
                 userId, learningThreshold
@@ -52,7 +51,7 @@ class DatabaseUserDictionary(
         }
 
     override fun getAllWords(): List<Word> =
-        safeDbCall {
+        safeDbCall(emptyList()) {
             queryWords(
                 "SELECT text, translate, correct_answers_count, file_id FROM words WHERE user_id = ? ORDER BY id",
                 userId
@@ -60,7 +59,7 @@ class DatabaseUserDictionary(
         }
 
     override fun setCorrectAnswersCount(word: String, correctAnswersCount: Int) {
-        safeDbCall {
+        safeDbCall(Unit) {
             DriverManager.getConnection(DB_URL).use { connection ->
                 connection.prepareStatement(
                     "UPDATE words SET correct_answers_count = ? WHERE user_id = ? AND text = ?"
@@ -75,7 +74,7 @@ class DatabaseUserDictionary(
     }
 
     override fun resetUserProgress() {
-        safeDbCall {
+        safeDbCall(Unit) {
             DriverManager.getConnection(DB_URL).use { connection ->
                 connection.prepareStatement(
                     "UPDATE words SET correct_answers_count = 0 WHERE user_id = ?"
@@ -88,7 +87,7 @@ class DatabaseUserDictionary(
     }
 
     override fun clearDictionary() {
-        safeDbCall {
+        safeDbCall(Unit) {
             DriverManager.getConnection(DB_URL).use { connection ->
                 connection.prepareStatement(
                     "DELETE FROM words WHERE user_id = ?"
@@ -106,7 +105,7 @@ class DatabaseUserDictionary(
 
         val lines = file.readLines(StandardCharsets.UTF_8)
 
-        safeDbCall {
+        safeDbCall(Unit) {
             DriverManager.getConnection(DB_URL).use { connection ->
                 connection.autoCommit = false
 
@@ -136,7 +135,7 @@ class DatabaseUserDictionary(
     }
 
     override fun getCorrectAnswersCount(word: String): Int =
-        safeDbCall {
+        safeDbCall(0) {
             queryInt(
                 "SELECT correct_answers_count FROM words WHERE user_id = ? AND text = ?",
                 userId, word
@@ -146,7 +145,7 @@ class DatabaseUserDictionary(
     override fun updateWordFileId(word: String?, fileId: String) {
         if (word == null) return
 
-        safeDbCall {
+        safeDbCall(Unit) {
             DriverManager.getConnection(DB_URL).use { connection ->
                 connection.prepareStatement(
                     "UPDATE words SET file_id = ? WHERE user_id = ? AND text = ?"
@@ -177,7 +176,7 @@ class DatabaseUserDictionary(
     }
 
     private fun ensureUserExists() {
-        safeDbCall {
+        safeDbCall(Unit) {
             DriverManager.getConnection(DB_URL).use { connection ->
                 connection.prepareStatement(
                     "INSERT OR IGNORE INTO users (chat_id) VALUES (?)"
@@ -234,12 +233,12 @@ class DatabaseUserDictionary(
         }
     }
 
-    private fun <T> safeDbCall(block: () -> T): T =
+    private fun <T> safeDbCall(defaultValue: T, block: () -> T): T =
         try {
             block()
         } catch (e: SQLException) {
             println("DATABASE ERROR:")
             e.printStackTrace()
-            throw RuntimeException(e)
+            defaultValue
         }
 }
