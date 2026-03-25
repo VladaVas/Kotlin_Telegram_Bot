@@ -4,7 +4,6 @@ object InputValidator {
     private const val MAX_TEXT_LENGTH = 1000
     private const val MAX_CALLBACK_LENGTH = 256
     private val allowedTextPattern = Regex("^[^\\p{Cntrl}]{1,1000}$")
-    private val allowedCallbackPattern = Regex("^[a-zA-Z0-9_\\-|]+$")
 
     fun validateUserText(name: String): String {
         val trimmed = name.trim()
@@ -25,7 +24,7 @@ object InputValidator {
         if (SecurityLogger.isSuspicious(trimmed)) {
             throw IllegalArgumentException("Подозрительный ввод в callback data")
         }
-        if (!allowedCallbackPattern.matches(trimmed)) {
+        if (trimmed.any { it.isISOControl() }) {
             throw IllegalArgumentException("Недопустимые символы в callback data")
         }
         if (trimmed.length > MAX_CALLBACK_LENGTH) {
